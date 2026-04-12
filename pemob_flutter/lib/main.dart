@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
+import 'theme/app_theme.dart';
+import 'screens/login_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const SipeselApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SipeselApp extends StatelessWidget {
+  const SipeselApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text(
-            'PEMOB Flutter 🚀',
-            style: TextStyle(fontSize: 24),
-          ),
-        ),
-      ),
+    return MaterialApp(
+      title: 'SIPESEL',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      home: const LoginScreen(),
     );
   }
 }
