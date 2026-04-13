@@ -1,49 +1,101 @@
+// Harga pajak per jenis
+const Map<String, double> hargaPajak = {
+  'harian': 5000,
+  'mingguan': 35000,
+  'bulanan': 150000,
+};
+
 class PembayaranModel {
-  final int idPembayaran;
+  final String noTransaksi;
   final String noKios;
-  final String namaPedagang;
-  final String bulan;
-  final int tahun;
+  final String jenisPajak; // 'harian', 'mingguan', 'bulanan'
   final double jumlah;
-  final String status; // 'lunas', 'belum', 'telat'
-  final String tanggalBayar;
+  final String status; // 'berhasil', 'pending', 'gagal'
+  final String tanggal; // format: '2026-04-13 07:39:07'
   final String metodeBayar;
 
   PembayaranModel({
-    required this.idPembayaran,
+    required this.noTransaksi,
     required this.noKios,
-    required this.namaPedagang,
-    required this.bulan,
-    required this.tahun,
+    required this.jenisPajak,
     required this.jumlah,
     required this.status,
-    required this.tanggalBayar,
+    required this.tanggal,
     required this.metodeBayar,
   });
 
   String get statusLabel {
     switch (status) {
-      case 'lunas':
-        return 'Lunas';
-      case 'telat':
-        return 'Terlambat';
+      case 'berhasil':
+        return 'Berhasil';
+      case 'pending':
+        return 'Menunggu Verifikasi';
+      case 'gagal':
+        return 'Gagal';
       default:
-        return 'Belum Bayar';
+        return 'Pending';
+    }
+  }
+
+  String get jenisPajakLabel {
+    switch (jenisPajak) {
+      case 'harian':
+        return 'Harian';
+      case 'mingguan':
+        return 'Mingguan';
+      case 'bulanan':
+        return 'Bulanan';
+      default:
+        return jenisPajak;
     }
   }
 }
 
+// Dummy data — sesuai web (5 transaksi, 2 pending, 1 berhasil, 2 gagal)
 final List<PembayaranModel> dummyPembayaran = [
-  PembayaranModel(idPembayaran: 1, noKios: 'A-01', namaPedagang: 'Budi Santoso', bulan: 'April', tahun: 2025, jumlah: 500000, status: 'lunas', tanggalBayar: '2025-04-03', metodeBayar: 'Transfer'),
-  PembayaranModel(idPembayaran: 2, noKios: 'A-02', namaPedagang: 'Siti Aminah', bulan: 'April', tahun: 2025, jumlah: 450000, status: 'belum', tanggalBayar: '-', metodeBayar: '-'),
-  PembayaranModel(idPembayaran: 3, noKios: 'B-01', namaPedagang: 'Ahmad Yusuf', bulan: 'April', tahun: 2025, jumlah: 600000, status: 'lunas', tanggalBayar: '2025-04-05', metodeBayar: 'Tunai'),
-  PembayaranModel(idPembayaran: 4, noKios: 'B-02', namaPedagang: 'Dewi Lestari', bulan: 'April', tahun: 2025, jumlah: 550000, status: 'telat', tanggalBayar: '-', metodeBayar: '-'),
-  PembayaranModel(idPembayaran: 5, noKios: 'C-01', namaPedagang: 'Hendra Gunawan', bulan: 'April', tahun: 2025, jumlah: 480000, status: 'lunas', tanggalBayar: '2025-04-02', metodeBayar: 'QRIS'),
-  PembayaranModel(idPembayaran: 6, noKios: 'C-02', namaPedagang: 'Rina Marlina', bulan: 'April', tahun: 2025, jumlah: 520000, status: 'belum', tanggalBayar: '-', metodeBayar: '-'),
-  PembayaranModel(idPembayaran: 7, noKios: 'A-03', namaPedagang: 'Wahyu Prasetyo', bulan: 'Maret', tahun: 2025, jumlah: 500000, status: 'lunas', tanggalBayar: '2025-03-04', metodeBayar: 'Transfer'),
-  PembayaranModel(idPembayaran: 8, noKios: 'A-04', namaPedagang: 'Fitri Handayani', bulan: 'Maret', tahun: 2025, jumlah: 450000, status: 'lunas', tanggalBayar: '2025-03-07', metodeBayar: 'Tunai'),
-  PembayaranModel(idPembayaran: 9, noKios: 'D-01', namaPedagang: 'Bambang Susilo', bulan: 'Maret', tahun: 2025, jumlah: 700000, status: 'telat', tanggalBayar: '-', metodeBayar: '-'),
-  PembayaranModel(idPembayaran: 10, noKios: 'D-02', namaPedagang: 'Nurul Hidayah', bulan: 'Maret', tahun: 2025, jumlah: 650000, status: 'lunas', tanggalBayar: '2025-03-10', metodeBayar: 'QRIS'),
-  PembayaranModel(idPembayaran: 11, noKios: 'B-03', namaPedagang: 'Agus Setiawan', bulan: 'Februari', tahun: 2025, jumlah: 600000, status: 'lunas', tanggalBayar: '2025-02-05', metodeBayar: 'Transfer'),
-  PembayaranModel(idPembayaran: 12, noKios: 'C-03', namaPedagang: 'Maya Kusuma', bulan: 'Februari', tahun: 2025, jumlah: 480000, status: 'belum', tanggalBayar: '-', metodeBayar: '-'),
+  PembayaranModel(
+    noTransaksi: 'TRX-20260413-152847',
+    noKios: 'k-321',
+    jenisPajak: 'harian',
+    jumlah: 5000,
+    status: 'pending',
+    tanggal: '2026-04-13 07:39:07',
+    metodeBayar: 'DANA',
+  ),
+  PembayaranModel(
+    noTransaksi: 'TRX-20260412-587324',
+    noKios: 'k-321',
+    jenisPajak: 'harian',
+    jumlah: 5000,
+    status: 'pending',
+    tanggal: '2026-04-12 08:42:34',
+    metodeBayar: 'DANA',
+  ),
+  PembayaranModel(
+    noTransaksi: 'TRX-20260411-234561',
+    noKios: 'k-321',
+    jenisPajak: 'mingguan',
+    jumlah: 35000,
+    status: 'berhasil',
+    tanggal: '2026-04-11 09:15:00',
+    metodeBayar: 'Transfer',
+  ),
+  PembayaranModel(
+    noTransaksi: 'TRX-20260404-891234',
+    noKios: 'k-321',
+    jenisPajak: 'harian',
+    jumlah: 5000,
+    status: 'gagal',
+    tanggal: '2026-04-04 10:00:00',
+    metodeBayar: 'DANA',
+  ),
+  PembayaranModel(
+    noTransaksi: 'TRX-20260401-456789',
+    noKios: 'k-321',
+    jenisPajak: 'harian',
+    jumlah: 5000,
+    status: 'gagal',
+    tanggal: '2026-04-01 08:00:00',
+    metodeBayar: 'QRIS',
+  ),
 ];

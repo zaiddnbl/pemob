@@ -9,10 +9,10 @@ class RiwayatDetailScreen extends StatelessWidget {
 
   Color get _statusColor {
     switch (pembayaran.status) {
-      case 'lunas':
+      case 'berhasil':
         return const Color(0xFF2E7D32);
-      case 'telat':
-        return const Color(0xFFC62828);
+      case 'gagal':
+        return AppTheme.errorRed;
       default:
         return const Color(0xFFE65100);
     }
@@ -20,10 +20,10 @@ class RiwayatDetailScreen extends StatelessWidget {
 
   IconData get _statusIcon {
     switch (pembayaran.status) {
-      case 'lunas':
+      case 'berhasil':
         return Icons.check_circle_rounded;
-      case 'telat':
-        return Icons.warning_rounded;
+      case 'gagal':
+        return Icons.cancel_rounded;
       default:
         return Icons.pending_rounded;
     }
@@ -43,9 +43,7 @@ class RiwayatDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Pembayaran'),
-        backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: Colors.white,
+        title: const Text('Detail Transaksi'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.pop(context),
@@ -57,10 +55,10 @@ class RiwayatDetailScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
-              // Status card
+              // ── Status Card ────────────────────────────────
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -80,7 +78,7 @@ class RiwayatDetailScreen extends StatelessWidget {
                         color: _statusColor.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(_statusIcon, color: _statusColor, size: 48),
+                      child: Icon(_statusIcon, color: _statusColor, size: 52),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -95,14 +93,14 @@ class RiwayatDetailScreen extends StatelessWidget {
                     Text(
                       'Rp ${_formatRupiah(pembayaran.jumlah)}',
                       style: const TextStyle(
-                        fontSize: 28,
+                        fontSize: 30,
                         fontWeight: FontWeight.w900,
                         color: AppTheme.darkText,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${pembayaran.bulan} ${pembayaran.tahun}',
+                      pembayaran.jenisPajakLabel,
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppTheme.greyText,
@@ -112,9 +110,9 @@ class RiwayatDetailScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Detail info
+              // ── Detail Info ────────────────────────────────
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -133,30 +131,48 @@ class RiwayatDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Informasi Pembayaran',
+                      'Informasi Transaksi',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.darkText,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildDetailRow('ID Pembayaran', '#${pembayaran.idPembayaran.toString().padLeft(4, '0')}'),
-                    _buildDetailRow('No. Kios', pembayaran.noKios),
-                    _buildDetailRow('Nama Pedagang', pembayaran.namaPedagang),
-                    _buildDetailRow('Periode', '${pembayaran.bulan} ${pembayaran.tahun}'),
-                    _buildDetailRow('Jumlah', 'Rp ${_formatRupiah(pembayaran.jumlah)}'),
-                    _buildDetailRow('Tanggal Bayar',
-                        pembayaran.tanggalBayar == '-' ? 'Belum dibayar' : pembayaran.tanggalBayar),
-                    _buildDetailRow('Metode Bayar',
-                        pembayaran.metodeBayar == '-' ? '-' : pembayaran.metodeBayar),
+                    _buildRow('No. Transaksi', pembayaran.noTransaksi),
+                    _buildRow('No. Kios', pembayaran.noKios),
+                    _buildRow('Jenis Pajak', pembayaran.jenisPajakLabel),
+                    _buildRow('Tanggal', pembayaran.tanggal),
+                    _buildRow('Metode Bayar', pembayaran.metodeBayar),
+                    const Divider(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total Bayar',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.darkText,
+                          ),
+                        ),
+                        Text(
+                          'Rp ${_formatRupiah(pembayaran.jumlah)}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.primaryGreen,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // Tombol kembali
+              // ── Tombol Kembali ─────────────────────────────
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -172,7 +188,7 @@ class RiwayatDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -182,12 +198,15 @@ class RiwayatDetailScreen extends StatelessWidget {
             label,
             style: const TextStyle(fontSize: 13, color: AppTheme.greyText),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.darkText,
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.darkText,
+              ),
             ),
           ),
         ],
