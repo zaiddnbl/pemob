@@ -34,7 +34,7 @@ class MainScreenState extends State<MainScreen> {
 
   void setTab(int index) {
     setState(() => _currentIndex = index);
-    // ✅ Setiap kali pindah ke tab Riwayat (index 2), paksa refresh data
+    // ✅ Refresh saat masuk tab Riwayat
     if (index == 2) {
       riwayatScreenKey.currentState?.refreshData();
     }
@@ -47,54 +47,31 @@ class MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (i) => setTab(i),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard_outlined),
-                activeIcon: Icon(Icons.dashboard_rounded),
-                label: 'Dashboard',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.payment_outlined),
-                activeIcon: Icon(Icons.payment_rounded),
-                label: 'Bayar',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.history_outlined),
-                activeIcon: Icon(Icons.history_rounded),
-                label: 'Riwayat',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline_rounded),
-                activeIcon: Icon(Icons.person_rounded),
-                label: 'Profil',
-              ),
-            ],
+
+      // ✅ LANGSUNG pakai BottomNavigationBar tanpa Stack & Positioned
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (i) => setTab(i),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard_rounded),
+            label: 'Dashboard',
           ),
-          // Badge notifikasi di BottomNav (Stack + Positioned requirement ETS)
-          Positioned(
-            top: 4,
-            right: MediaQuery.of(context).size.width * 0.5 - 8,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: const Text(
-                '3',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.payment_outlined),
+            activeIcon: Icon(Icons.payment_rounded),
+            label: 'Bayar',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_outlined),
+            activeIcon: Icon(Icons.history_rounded),
+            label: 'Riwayat',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline_rounded),
+            activeIcon: Icon(Icons.person_rounded),
+            label: 'Profil',
           ),
         ],
       ),
