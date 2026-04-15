@@ -8,16 +8,23 @@ class RiwayatScreen extends StatefulWidget {
   const RiwayatScreen({super.key});
 
   @override
-  State<RiwayatScreen> createState() => _RiwayatScreenState();
+  State<RiwayatScreen> createState() => RiwayatScreenState();
 }
 
-class _RiwayatScreenState extends State<RiwayatScreen> {
+class RiwayatScreenState extends State<RiwayatScreen> {
+  // ✅ Dipanggil oleh MainScreen.setTab(2) setiap kali tab Riwayat dibuka
+  void refreshData() {
+    setState(() {});
+  }
   final _searchController = TextEditingController();
   String _filterStatus = 'semua';
 
+  // ✅ FIX: Baca dari runtimePembayaran (bukan dummyPembayaran yang lama).
+  // runtimePembayaran adalah list global yang bisa dimodifikasi, sehingga
+  // setiap transaksi baru dari PembayaranScreen langsung tersedia di sini.
   List<PembayaranModel> get _riwayatSaya {
     final noKios = SessionUser.currentUser?.noKios ?? '';
-    final list = dummyPembayaran.where((p) => p.noKios == noKios).toList();
+    final list = runtimePembayaran.where((p) => p.noKios == noKios).toList();
     list.sort((a, b) => b.tanggal.compareTo(a.tanggal));
     return list;
   }
@@ -92,7 +99,7 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
       backgroundColor: AppTheme.bgColor,
       appBar: AppBar(
         title: const Text('Riwayat Pembayaran'),
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
       ),
       body: SafeArea(
         child: Column(
@@ -173,7 +180,7 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Filter buttons (mirip web)
+                  // Filter buttons
                   Row(
                     children: [
                       _filterBtn('semua', 'Semua'),
@@ -215,13 +222,10 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                   final p = _filtered[index];
                   final color = _statusColor(p.status);
                   final icon = _statusIcon(p.status);
-
-                  // Format tanggal
                   final parts = p.tanggal.split(' ');
                   final date = parts[0];
-                  final time = parts.length > 1
-                      ? parts[1].substring(0, 5)
-                      : '';
+                  final time =
+                  parts.length > 1 ? parts[1].substring(0, 5) : '';
 
                   return GestureDetector(
                     onTap: () => Navigator.push(
@@ -251,8 +255,8 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color:
-                              AppTheme.accentYellow.withOpacity(0.15),
+                              color: AppTheme.accentYellow
+                                  .withOpacity(0.15),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(

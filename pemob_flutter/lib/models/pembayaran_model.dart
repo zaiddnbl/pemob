@@ -51,8 +51,10 @@ class PembayaranModel {
   }
 }
 
-// Dummy data — sesuai web (5 transaksi, 2 pending, 1 berhasil, 2 gagal)
-final List<PembayaranModel> dummyPembayaran = [
+// ──────────────────────────────────────────────────────────────────────────────
+// DUMMY DATA awal (statis, sesuai ketentuan ETS minimal 10 data)
+// ──────────────────────────────────────────────────────────────────────────────
+final List<PembayaranModel> _dummyPembayaranAwal = [
   PembayaranModel(
     noTransaksi: 'TRX-20260413-152847',
     noKios: 'k-321',
@@ -98,4 +100,62 @@ final List<PembayaranModel> dummyPembayaran = [
     tanggal: '2026-04-01 08:00:00',
     metodeBayar: 'QRIS',
   ),
+  // ── Tambahan dummy agar total >= 10 data (ETS requirement) ─────────────────
+  PembayaranModel(
+    noTransaksi: 'TRX-20260330-112233',
+    noKios: 'k-321',
+    jenisPajak: 'bulanan',
+    jumlah: 150000,
+    status: 'berhasil',
+    tanggal: '2026-03-30 08:00:00',
+    metodeBayar: 'Transfer',
+  ),
+  PembayaranModel(
+    noTransaksi: 'TRX-20260325-334455',
+    noKios: 'k-321',
+    jenisPajak: 'mingguan',
+    jumlah: 35000,
+    status: 'berhasil',
+    tanggal: '2026-03-25 09:30:00',
+    metodeBayar: 'Virtual Account',
+  ),
+  PembayaranModel(
+    noTransaksi: 'TRX-20260320-556677',
+    noKios: 'k-321',
+    jenisPajak: 'harian',
+    jumlah: 5000,
+    status: 'gagal',
+    tanggal: '2026-03-20 07:15:00',
+    metodeBayar: 'QRIS',
+  ),
+  PembayaranModel(
+    noTransaksi: 'TRX-20260315-778899',
+    noKios: 'k-321',
+    jenisPajak: 'harian',
+    jumlah: 5000,
+    status: 'berhasil',
+    tanggal: '2026-03-15 11:00:00',
+    metodeBayar: 'DANA',
+  ),
+  PembayaranModel(
+    noTransaksi: 'TRX-20260310-990011',
+    noKios: 'k-321',
+    jenisPajak: 'mingguan',
+    jumlah: 35000,
+    status: 'pending',
+    tanggal: '2026-03-10 10:45:00',
+    metodeBayar: 'Transfer',
+  ),
 ];
+
+// ──────────────────────────────────────────────────────────────────────────────
+// RUNTIME LIST — ini yang dipakai di seluruh app.
+// Karena tidak pakai `final`, list ini bisa ditambah/diubah kapan saja.
+// Transaksi baru dari PembayaranScreen di-insert ke list ini supaya
+// langsung muncul di RiwayatScreen tanpa perlu database.
+// ──────────────────────────────────────────────────────────────────────────────
+List<PembayaranModel> runtimePembayaran = List.from(_dummyPembayaranAwal);
+
+// Alias agar kode lama yang masih pakai `dummyPembayaran` tetap compile
+// (tinggal hapus alias ini kalau semua file sudah diupdate)
+List<PembayaranModel> get dummyPembayaran => runtimePembayaran;

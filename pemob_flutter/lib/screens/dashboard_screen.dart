@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../models/pembayaran_model.dart';
 import '../theme/app_theme.dart';
-import 'pembayaran_screen.dart';
-import 'riwayat_screen.dart';
+import 'main_screen.dart'; // untuk MainScreen.goToTab()
 
-class DashboardScreen extends StatelessWidget {
+// ✅ Diubah ke StatefulWidget agar bisa refresh saat tab aktif
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
   String _formatRupiah(double amount) {
     final str = amount.toInt().toString();
     final buffer = StringBuffer();
@@ -18,9 +23,10 @@ class DashboardScreen extends StatelessWidget {
     return 'Rp ${buffer.toString()}';
   }
 
+  // ✅ Baca dari runtimePembayaran agar transaksi baru langsung muncul
   List<PembayaranModel> get _riwayatSaya {
     final noKios = SessionUser.currentUser?.noKios ?? '';
-    final list = dummyPembayaran.where((p) => p.noKios == noKios).toList();
+    final list = runtimePembayaran.where((p) => p.noKios == noKios).toList();
     list.sort((a, b) => b.tanggal.compareTo(a.tanggal));
     return list;
   }
@@ -30,8 +36,7 @@ class DashboardScreen extends StatelessWidget {
     return berhasil.isNotEmpty ? berhasil.first : null;
   }
 
-  // Hitung tagihan berikutnya berdasarkan transaksi berhasil terakhir
-  DateTime? get _tagihankBerikutnya {
+  DateTime? get _tagihanBerikutnya {
     final last = _pembayaranTerakhir;
     if (last == null) return null;
     final lastDate = DateTime.parse(last.tanggal.split(' ')[0]);
@@ -61,7 +66,7 @@ class DashboardScreen extends StatelessWidget {
     final firstName = user?.nama.split(' ').first ?? 'Pedagang';
     final noKios = user?.noKios ?? '-';
     final lastPay = _pembayaranTerakhir;
-    final nextBill = _tagihankBerikutnya;
+    final nextBill = _tagihanBerikutnya;
     final sisaHari = nextBill != null
         ? nextBill.difference(DateTime.now()).inDays
         : null;
@@ -70,7 +75,7 @@ class DashboardScreen extends StatelessWidget {
       backgroundColor: AppTheme.bgColor,
       body: CustomScrollView(
         slivers: [
-          // ── AppBar ──────────────────────────────────────────
+          // ── SliverAppBar ──────────────────────────────────────
           SliverAppBar(
             pinned: true,
             expandedHeight: 200,
@@ -99,6 +104,7 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
             actions: [
+              // ✅ Stack + Positioned — badge notifikasi (ETS requirement)
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -153,7 +159,6 @@ class DashboardScreen extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Background gradient dengan pola lingkaran
                   Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
@@ -163,7 +168,6 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Dekorasi lingkaran
                   Positioned(
                     top: -30,
                     right: -30,
@@ -188,7 +192,6 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Teks welcome
                   Positioned(
                     bottom: 24,
                     left: 20,
@@ -201,7 +204,6 @@ class DashboardScreen extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 15,
-                            fontWeight: FontWeight.w400,
                           ),
                         ),
                         Row(
@@ -215,8 +217,7 @@ class DashboardScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Text('👋',
-                                style: TextStyle(fontSize: 20)),
+                            const Text('👋', style: TextStyle(fontSize: 20)),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -241,10 +242,9 @@ class DashboardScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── 3 Info Cards ──────────────────────────────
+                  // ── 3 Info Cards ─────────────────────────────
                   Row(
                     children: [
-                      // Tagihan Berikutnya
                       Expanded(
                         child: _infoCard(
                           label: 'TAGIHAN BERIKUTNYA',
@@ -260,7 +260,6 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // Jenis Pajak Terakhir
                       Expanded(
                         child: _infoCard(
                           label: 'JENIS PAJAK TERAKHIR',
@@ -272,7 +271,6 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // Nomor Kios
                       Expanded(
                         child: _infoCard(
                           label: 'NOMOR KIOS',
@@ -304,11 +302,8 @@ class DashboardScreen extends StatelessWidget {
                           title: 'Bayar Pajak',
                           subtitle: 'Lakukan pembayaran sekarang',
                           color: AppTheme.primaryGreen,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const PembayaranScreen()),
-                          ),
+                          // ✅ FIX: switch tab, bukan Navigator.push
+                          onTap: () => MainScreen.goToTab(1),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -318,11 +313,8 @@ class DashboardScreen extends StatelessWidget {
                           title: 'Riwayat Bayar',
                           subtitle: 'Lihat semua transaksi Anda',
                           color: const Color(0xFF6B7280),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const RiwayatScreen()),
-                          ),
+                          // ✅ FIX: switch tab, bukan Navigator.push
+                          onTap: () => MainScreen.goToTab(2),
                         ),
                       ),
                     ],
@@ -343,11 +335,8 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const RiwayatScreen()),
-                        ),
+                        // ✅ FIX: switch tab, bukan Navigator.push
+                        onTap: () => MainScreen.goToTab(2),
                         child: const Text(
                           'Lihat Semua',
                           style: TextStyle(
@@ -361,7 +350,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // Daftar 3 transaksi terakhir
+                  // Daftar 3 transaksi terakhir dari runtimePembayaran
                   ..._riwayatSaya.take(3).map((p) => _transaksiTile(p)),
 
                   if (_riwayatSaya.isEmpty)
@@ -528,9 +517,8 @@ class DashboardScreen extends StatelessWidget {
         statusIcon = Icons.pending_rounded;
     }
 
-    // Format tanggal singkat
     final parts = p.tanggal.split(' ');
-    final date = parts[0]; // '2026-04-13'
+    final date = parts[0];
     final time = parts.length > 1 ? parts[1].substring(0, 5) : '';
 
     return Container(
@@ -582,7 +570,7 @@ class DashboardScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'Rp ${p.jumlah.toInt() >= 1000 ? _formatRupiahRaw(p.jumlah) : p.jumlah.toInt().toString()}',
+                _formatRupiah(p.jumlah),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -611,15 +599,5 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatRupiahRaw(double amount) {
-    final str = amount.toInt().toString();
-    final buffer = StringBuffer();
-    for (int i = 0; i < str.length; i++) {
-      if (i > 0 && (str.length - i) % 3 == 0) buffer.write('.');
-      buffer.write(str[i]);
-    }
-    return buffer.toString();
   }
 }

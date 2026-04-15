@@ -5,22 +5,40 @@ import 'pembayaran_screen.dart';
 import 'riwayat_screen.dart';
 import 'profil_screen.dart';
 
+final GlobalKey<MainScreenState> mainScreenKey = GlobalKey<MainScreenState>();
+
+// ✅ GlobalKey khusus RiwayatScreen agar bisa dipanggil refresh() dari luar
+final GlobalKey<RiwayatScreenState> riwayatScreenKey = GlobalKey<RiwayatScreenState>();
+
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  MainScreen() : super(key: mainScreenKey);
+
+  static void goToTab(int index) {
+    mainScreenKey.currentState?.setTab(index);
+  }
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<MainScreen> createState() => MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    DashboardScreen(),
-    PembayaranScreen(),
-    RiwayatScreen(),
-    ProfilScreen(),
+  // ✅ RiwayatScreen diberi key agar state-nya bisa diakses langsung
+  late final List<Widget> _screens = [
+    const DashboardScreen(),
+    const PembayaranScreen(),
+    RiwayatScreen(key: riwayatScreenKey),
+    const ProfilScreen(),
   ];
+
+  void setTab(int index) {
+    setState(() => _currentIndex = index);
+    // ✅ Setiap kali pindah ke tab Riwayat (index 2), paksa refresh data
+    if (index == 2) {
+      riwayatScreenKey.currentState?.refreshData();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +52,7 @@ class _MainScreenState extends State<MainScreen> {
         children: [
           BottomNavigationBar(
             currentIndex: _currentIndex,
-            onTap: (i) => setState(() => _currentIndex = i),
+            onTap: (i) => setTab(i),
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.dashboard_outlined),
@@ -58,7 +76,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ],
           ),
-          // Badge notifikasi di BottomNav (Stack + Positioned requirement)
+          // Badge notifikasi di BottomNav (Stack + Positioned requirement ETS)
           Positioned(
             top: 4,
             right: MediaQuery.of(context).size.width * 0.5 - 8,
