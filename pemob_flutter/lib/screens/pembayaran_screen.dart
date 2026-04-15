@@ -3,6 +3,7 @@ import '../models/pembayaran_model.dart';
 import '../models/user_model.dart';
 import '../theme/app_theme.dart';
 import 'riwayat_screen.dart';
+import 'main_screen.dart';
 
 class PembayaranScreen extends StatefulWidget {
   const PembayaranScreen({super.key});
@@ -228,57 +229,26 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
 
               const SizedBox(height: 20),
 
-              // Tombol: Ke Riwayat & Bayar Lagi
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context); // tutup dialog
-                        // ✅ FIX: pakai pushReplacement ke RiwayatScreen agar
-                        // setState dipanggil ulang dan transaksi baru tampil
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const RiwayatScreen()),
-                        );
-                      },
-                      icon: const Icon(Icons.history_rounded, size: 18),
-                      label: const Text('Ke Riwayat'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryGreen,
-                        side:
-                        const BorderSide(color: AppTheme.primaryGreen),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding:
-                        const EdgeInsets.symmetric(vertical: 12),
-                      ),
+              // ✅ Tombol: Selesai
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context); // Tutup dialog
+                    setState(() {
+                      _selectedJenis = 'harian';
+                      _selectedMetode = 'DANA';
+                    });
+                  },
+                  icon: const Icon(Icons.check_circle_rounded, size: 18),
+                  label: const Text('Selesai'),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        setState(() {
-                          _selectedJenis = 'harian';
-                          _selectedMetode = 'DANA';
-                        });
-                      },
-                      icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text('Bayar Lagi'),
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding:
-                        const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -353,7 +323,6 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // ✅ Row dengan Expanded untuk layout responsif
                       Row(
                         children: _jenisPajak.map((j) {
                           final isSelected = _selectedJenis == j['key'];
@@ -448,8 +417,6 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // ✅ TextFormField dengan 2 aturan validasi
                       TextFormField(
                         controller: _kiosController,
                         onChanged: (_) => setState(() {}),
@@ -459,11 +426,9 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
                           hintText: 'Contoh: k-321',
                         ),
                         validator: (value) {
-                          // Validasi 1: tidak boleh kosong
                           if (value == null || value.trim().isEmpty) {
                             return 'Nomor kios tidak boleh kosong';
                           }
-                          // Validasi 2: minimal 3 karakter
                           if (value.trim().length < 3) {
                             return 'Nomor kios minimal 3 karakter';
                           }
@@ -473,7 +438,6 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
 
                       const SizedBox(height: 16),
 
-                      // Pilih Metode Pembayaran
                       const Text(
                         'Metode Pembayaran',
                         style: TextStyle(
