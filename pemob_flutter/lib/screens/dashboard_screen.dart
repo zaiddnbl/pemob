@@ -9,10 +9,16 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<DashboardScreen> createState() => DashboardScreenState(); // ✅ Baris 12: Hapus '_'
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class DashboardScreenState extends State<DashboardScreen> { // ✅ Baris 15: Hapus '_'
+
+  // ✅ Baris 17: Tambahkan fungsi refresh
+  void refreshData() {
+    setState(() {});
+  }
+
   String _formatRupiah(double amount) {
     final str = amount.toInt().toString();
     final buffer = StringBuffer();
@@ -31,25 +37,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return list;
   }
 
+  // ✅ Baris 35: Ambil data paling atas (terbaru) tanpa filter 'berhasil'
+  // agar "Jenis Pajak Terakhir" langsung update meski status masih pending.
   PembayaranModel? get _pembayaranTerakhir {
-    final berhasil = _riwayatSaya.where((p) => p.status == 'berhasil').toList();
-    return berhasil.isNotEmpty ? berhasil.first : null;
+    return _riwayatSaya.isNotEmpty ? _riwayatSaya.first : null;
   }
 
+  // ✅ Baris 41: Ubah menjadi Dummy (10 hari dari sekarang)
   DateTime? get _tagihanBerikutnya {
-    final last = _pembayaranTerakhir;
-    if (last == null) return null;
-    final lastDate = DateTime.parse(last.tanggal.split(' ')[0]);
-    switch (last.jenisPajak) {
-      case 'harian':
-        return lastDate.add(const Duration(days: 1));
-      case 'mingguan':
-        return lastDate.add(const Duration(days: 7));
-      case 'bulanan':
-        return lastDate.add(const Duration(days: 30));
-      default:
-        return null;
-    }
+    return DateTime.now().add(const Duration(days: 10));
   }
 
   String _formatTanggal(DateTime dt) {
@@ -75,7 +71,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       backgroundColor: AppTheme.bgColor,
       body: CustomScrollView(
         slivers: [
-          // ── SliverAppBar ──────────────────────────────────────
           SliverAppBar(
             pinned: true,
             expandedHeight: 200,
@@ -104,7 +99,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
             actions: [
-              // ✅ Stack + Positioned — badge notifikasi (ETS requirement)
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -242,7 +236,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── 3 Info Cards ─────────────────────────────
                   Row(
                     children: [
                       Expanded(
@@ -284,7 +277,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   const SizedBox(height: 20),
 
-                  // ── Aksi Cepat ────────────────────────────────
                   const Text(
                     'Aksi Cepat',
                     style: TextStyle(
@@ -302,7 +294,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           title: 'Bayar Pajak',
                           subtitle: 'Lakukan pembayaran sekarang',
                           color: AppTheme.primaryGreen,
-                          // ✅ FIX: switch tab, bukan Navigator.push
                           onTap: () => MainScreen.goToTab(1),
                         ),
                       ),
@@ -313,7 +304,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           title: 'Riwayat Bayar',
                           subtitle: 'Lihat semua transaksi Anda',
                           color: const Color(0xFF6B7280),
-                          // ✅ FIX: switch tab, bukan Navigator.push
                           onTap: () => MainScreen.goToTab(2),
                         ),
                       ),
@@ -322,7 +312,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ── Transaksi Terakhir ────────────────────────
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -335,7 +324,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       GestureDetector(
-                        // ✅ FIX: switch tab, bukan Navigator.push
                         onTap: () => MainScreen.goToTab(2),
                         child: const Text(
                           'Lihat Semua',
@@ -350,7 +338,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Daftar 3 transaksi terakhir dari runtimePembayaran
                   ..._riwayatSaya.take(3).map((p) => _transaksiTile(p)),
 
                   if (_riwayatSaya.isEmpty)
@@ -380,8 +367,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-
-  // ── Widget Helpers ────────────────────────────────────────
 
   Widget _infoCard({
     required String label,

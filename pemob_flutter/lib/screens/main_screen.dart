@@ -7,8 +7,9 @@ import 'profil_screen.dart';
 
 final GlobalKey<MainScreenState> mainScreenKey = GlobalKey<MainScreenState>();
 
-// ✅ GlobalKey khusus RiwayatScreen agar bisa dipanggil refresh() dari luar
 final GlobalKey<RiwayatScreenState> riwayatScreenKey = GlobalKey<RiwayatScreenState>();
+// ✅ Baris 12: Tambahkan GlobalKey untuk Dashboard
+final GlobalKey<DashboardScreenState> dashboardScreenKey = GlobalKey<DashboardScreenState>();
 
 class MainScreen extends StatefulWidget {
   MainScreen() : super(key: mainScreenKey);
@@ -24,9 +25,9 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // ✅ RiwayatScreen diberi key agar state-nya bisa diakses langsung
   late final List<Widget> _screens = [
-    const DashboardScreen(),
+    // ✅ Baris 31: Pasang key ke DashboardScreen
+    DashboardScreen(key: dashboardScreenKey),
     const PembayaranScreen(),
     RiwayatScreen(key: riwayatScreenKey),
     const ProfilScreen(),
@@ -34,7 +35,13 @@ class MainScreenState extends State<MainScreen> {
 
   void setTab(int index) {
     setState(() => _currentIndex = index);
-    // ✅ Refresh saat masuk tab Riwayat
+
+    // ✅ Baris 42-44: Refresh saat masuk tab Dashboard (index 0)
+    if (index == 0) {
+      dashboardScreenKey.currentState?.refreshData();
+    }
+
+    // Refresh saat masuk tab Riwayat (index 2)
     if (index == 2) {
       riwayatScreenKey.currentState?.refreshData();
     }
@@ -48,7 +55,6 @@ class MainScreenState extends State<MainScreen> {
         children: _screens,
       ),
 
-      // ✅ LANGSUNG pakai BottomNavigationBar tanpa Stack & Positioned
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (i) => setTab(i),
