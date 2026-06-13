@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "815037750503",
+    "project_id": "sipesel-d9e8b",
+    "storage_bucket": "sipesel-d9e8b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:815037750503:android:0754e9e146f30b92781642",
+        "android_client_info": {
+          "package_name": "com.example.sipesel"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXC9h5_8iXJE7hu3EoR_aNX-toOLB8QkA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

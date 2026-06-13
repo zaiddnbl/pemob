@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  network_security_config.xml
+  Letakkan di: android/app/src/main/res/xml/network_security_config.xml
+  (buat folder xml jika belum ada)
+
+  File ini diperlukan agar Flutter bisa koneksi ke server HTTP lokal
+  (bukan HTTPS) di Android. Tanpa file ini, request akan diblokir.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Emulator Android mengakses localhost PC via 10.0.2.2 -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- Jika pakai HP fisik, tambahkan IP komputer kamu -->
+        <!-- <domain includeSubdomains="true">192.168.1.5</domain> -->
+    </domain-config>
+</network-security-config>
