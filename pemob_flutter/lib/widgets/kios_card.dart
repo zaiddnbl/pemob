@@ -13,9 +13,9 @@ class KiosCard extends StatelessWidget {
       case 'aktif':
         return AppTheme.primaryGreen;
       case 'kosong':
-        return Colors.grey;
+        return const Color(0xFFE65100);
       default:
-        return AppTheme.errorRed;
+        return AppTheme.greyText;
     }
   }
 
@@ -54,20 +54,28 @@ class KiosCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Badge zona
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    width: 30,
+                    height: 30,
                     decoration: BoxDecoration(
-                      color: _statusColor.withOpacity(0.12),
+                      color: AppTheme.primaryGreen.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(
-                      Icons.storefront_rounded,
-                      color: _statusColor,
-                      size: 20,
+                    alignment: Alignment.center,
+                    child: Text(
+                      kios.zona,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.primaryGreen,
+                      ),
                     ),
                   ),
+                  // Status badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: _statusColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(20),
@@ -76,19 +84,19 @@ class KiosCard extends StatelessWidget {
                       kios.statusLabel,
                       style: TextStyle(
                         color: _statusColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
                 'Kios ${kios.noKios}',
                 style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
                   color: AppTheme.darkText,
                 ),
               ),
@@ -96,19 +104,26 @@ class KiosCard extends StatelessWidget {
                 kios.jenisJualan.isNotEmpty && kios.jenisJualan != '-'
                     ? kios.jenisJualan
                     : 'Tersedia',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.greyText,
-                ),
+                style: const TextStyle(fontSize: 11, color: AppTheme.greyText),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 6),
+              if (kios.namaPedagang.isNotEmpty)
+                Text(
+                  kios.namaPedagang,
+                  style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.darkText,
+                      fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              const SizedBox(height: 4),
               Text(
                 'Rp ${_formatRupiah(kios.hargaSewa)}',
                 style: const TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: AppTheme.primaryGreen,
                 ),
               ),
