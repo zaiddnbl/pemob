@@ -3,9 +3,6 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 import '../../theme/app_theme.dart';
-import '../edit_profil_screen.dart';
-import '../login_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class PengawasDashboardScreen extends StatefulWidget {
   const PengawasDashboardScreen({super.key});
@@ -72,35 +69,12 @@ class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
         color: AppTheme.primaryGreen,
         child: CustomScrollView(
           slivers: [
+            // ── Header — tombol edit & logout sudah dihapus ──
             SliverAppBar(
               pinned: true,
               expandedHeight: 160,
               automaticallyImplyLeading: false,
               backgroundColor: AppTheme.primaryGreen,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const EditProfilScreen()),
-                  ).then((_) => setState(() {})),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
-                  onPressed: () async {
-                    await FirebaseAuth.instance.signOut();
-                    SessionUser.logout();
-                    if (!mounted) return;
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const LoginScreen()),
-                          (_) => false,
-                    );
-                  },
-                ),
-              ],
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: const BoxDecoration(
@@ -115,11 +89,14 @@ class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Dashboard Pengawas',
-                            style: TextStyle(
-                                color: AppTheme.accentYellow,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900)),
+                        const Text(
+                          'Dashboard Pengawas',
+                          style: TextStyle(
+                            color: AppTheme.accentYellow,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                         Text(
                           'Halo, ${user?.nama.split(' ').first ?? 'Pengawas'} 👋',
                           style: const TextStyle(
@@ -135,174 +112,177 @@ class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
             SliverToBoxAdapter(
               child: _isLoading
                   ? const Padding(
-                padding: EdgeInsets.all(40),
-                child: Center(
-                    child: CircularProgressIndicator(
-                        color: AppTheme.primaryGreen)),
-              )
+                      padding: EdgeInsets.all(40),
+                      child: Center(
+                          child: CircularProgressIndicator(
+                              color: AppTheme.primaryGreen)),
+                    )
                   : Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Stat Cards ──────────────────
-                    Row(
-                      children: [
-                        Expanded(
-                            child: _statCard(
-                              icon: Icons.people_rounded,
-                              label: 'Total Pedagang',
-                              value: '$_totalPedagang',
-                              color: const Color(0xFF1565C0),
-                            )),
-                        const SizedBox(width: 10),
-                        Expanded(
-                            child: _statCard(
-                              icon: Icons.storefront_rounded,
-                              label: 'Kios Aktif',
-                              value: '$_totalKiosAktif',
-                              color: AppTheme.primaryGreen,
-                            )),
-                        const SizedBox(width: 10),
-                        Expanded(
-                            child: _statCard(
-                              icon: Icons.payments_rounded,
-                              label: 'Retribusi Bulan Ini',
-                              value: _formatRupiah(_totalRetribusiBulanIni),
-                              color: const Color(0xFF6A1B9A),
-                            )),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Chart Kepatuhan ─────────────
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2)),
-                        ],
-                      ),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Kepatuhan Pembayaran',
-                              style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.darkText)),
-                          const Text('Bulan ini',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.greyText)),
+                          // ── Stat Cards ──────────────────
+                          Row(
+                            children: [
+                              Expanded(
+                                  child: _statCard(
+                                icon: Icons.people_rounded,
+                                label: 'Total Pedagang',
+                                value: '$_totalPedagang',
+                                color: const Color(0xFF1565C0),
+                              )),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                  child: _statCard(
+                                icon: Icons.storefront_rounded,
+                                label: 'Kios Aktif',
+                                value: '$_totalKiosAktif',
+                                color: AppTheme.primaryGreen,
+                              )),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                  child: _statCard(
+                                icon: Icons.payments_rounded,
+                                label: 'Retribusi Bulan Ini',
+                                value: _formatRupiah(_totalRetribusiBulanIni),
+                                color: const Color(0xFF6A1B9A),
+                              )),
+                            ],
+                          ),
+
                           const SizedBox(height: 20),
 
-                          total == 0
-                              ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(20),
-                              child: Text('Belum ada data pembayaran',
-                                  style: TextStyle(
-                                      color: AppTheme.greyText)),
+                          // ── Chart Kepatuhan ─────────────
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2)),
+                              ],
                             ),
-                          )
-                              : SizedBox(
-                            height: 200,
-                            child: PieChart(
-                              PieChartData(
-                                sections: [
-                                  if (_berhasil > 0)
-                                    PieChartSectionData(
-                                      value: _berhasil.toDouble(),
-                                      color: AppTheme.primaryGreen,
-                                      title:
-                                      '$_berhasil\nBerhasil',
-                                      titleStyle: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight:
-                                          FontWeight.w700,
-                                          color: Colors.white),
-                                      radius: 80,
-                                    ),
-                                  if (_pending > 0)
-                                    PieChartSectionData(
-                                      value: _pending.toDouble(),
-                                      color: const Color(0xFFE65100),
-                                      title: '$_pending\nPending',
-                                      titleStyle: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight:
-                                          FontWeight.w700,
-                                          color: Colors.white),
-                                      radius: 80,
-                                    ),
-                                  if (_ditolak > 0)
-                                    PieChartSectionData(
-                                      value: _ditolak.toDouble(),
-                                      color: AppTheme.errorRed,
-                                      title: '$_ditolak\nDitolak',
-                                      titleStyle: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight:
-                                          FontWeight.w700,
-                                          color: Colors.white),
-                                      radius: 80,
-                                    ),
-                                ],
-                                centerSpaceRadius: 40,
-                                sectionsSpace: 2,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Kepatuhan Pembayaran',
+                                  style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.darkText),
+                                ),
+                                const Text(
+                                  'Bulan ini',
+                                  style: TextStyle(
+                                      fontSize: 12, color: AppTheme.greyText),
+                                ),
+                                const SizedBox(height: 20),
+                                total == 0
+                                    ? const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(20),
+                                          child: Text(
+                                            'Belum ada data pembayaran',
+                                            style: TextStyle(
+                                                color: AppTheme.greyText),
+                                          ),
+                                        ),
+                                      )
+                                    : SizedBox(
+                                        height: 200,
+                                        child: PieChart(
+                                          PieChartData(
+                                            sections: [
+                                              if (_berhasil > 0)
+                                                PieChartSectionData(
+                                                  value: _berhasil.toDouble(),
+                                                  color: AppTheme.primaryGreen,
+                                                  title:
+                                                      '$_berhasil\nBerhasil',
+                                                  titleStyle: const TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: Colors.white),
+                                                  radius: 80,
+                                                ),
+                                              if (_pending > 0)
+                                                PieChartSectionData(
+                                                  value: _pending.toDouble(),
+                                                  color:
+                                                      const Color(0xFFE65100),
+                                                  title: '$_pending\nPending',
+                                                  titleStyle: const TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: Colors.white),
+                                                  radius: 80,
+                                                ),
+                                              if (_ditolak > 0)
+                                                PieChartSectionData(
+                                                  value: _ditolak.toDouble(),
+                                                  color: AppTheme.errorRed,
+                                                  title: '$_ditolak\nDitolak',
+                                                  titleStyle: const TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: Colors.white),
+                                                  radius: 80,
+                                                ),
+                                            ],
+                                            centerSpaceRadius: 40,
+                                            sectionsSpace: 2,
+                                          ),
+                                        ),
+                                      ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _legend(AppTheme.primaryGreen, 'Berhasil'),
+                                    const SizedBox(width: 16),
+                                    _legend(
+                                        const Color(0xFFE65100), 'Pending'),
+                                    const SizedBox(width: 16),
+                                    _legend(AppTheme.errorRed, 'Ditolak'),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
 
                           const SizedBox(height: 16),
 
-                          // Legend
+                          // ── Summary bottom ──────────────
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              _legend(AppTheme.primaryGreen, 'Berhasil'),
-                              const SizedBox(width: 16),
-                              _legend(const Color(0xFFE65100), 'Pending'),
-                              const SizedBox(width: 16),
-                              _legend(AppTheme.errorRed, 'Ditolak'),
+                              Expanded(
+                                child: _summaryCard(
+                                  label: 'Total Berhasil',
+                                  value: '$_berhasil transaksi',
+                                  color: AppTheme.primaryGreen,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _summaryCard(
+                                  label: 'Total Pembayaran',
+                                  value: '$total transaksi',
+                                  color: const Color(0xFF1565C0),
+                                ),
+                              ),
                             ],
                           ),
                         ],
                       ),
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // ── Summary bottom ──────────────
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _summaryCard(
-                            label: 'Total Berhasil',
-                            value: '$_berhasil transaksi',
-                            color: AppTheme.primaryGreen,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _summaryCard(
-                            label: 'Total Pembayaran',
-                            value: '$total transaksi',
-                            color: const Color(0xFF1565C0),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -353,10 +333,11 @@ class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
     );
   }
 
-  Widget _summaryCard(
-      {required String label,
-        required String value,
-        required Color color}) {
+  Widget _summaryCard({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -393,8 +374,7 @@ class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
                 color: color, borderRadius: BorderRadius.circular(3))),
         const SizedBox(width: 5),
         Text(label,
-            style:
-            const TextStyle(fontSize: 11, color: AppTheme.greyText)),
+            style: const TextStyle(fontSize: 11, color: AppTheme.greyText)),
       ],
     );
   }
