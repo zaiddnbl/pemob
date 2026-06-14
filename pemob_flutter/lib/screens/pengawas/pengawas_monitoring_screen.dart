@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models/pembayaran_model.dart';
 import '../../services/firestore_service.dart';
@@ -11,13 +12,33 @@ class PengawasMonitoringScreen extends StatefulWidget {
       _PengawasMonitoringScreenState();
 }
 
-class _PengawasMonitoringScreenState extends State<PengawasMonitoringScreen> {
+class _PengawasMonitoringScreenState extends State<PengawasMonitoringScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  String _searchQuery = '';
   String _filterStatus = 'semua';
+
+  // Ganti StreamBuilder dengan subscription manual
+  List<PembayaranModel> _allData = [];
+  StreamSubscription<List<PembayaranModel>>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = FirestoreService.streamSemuaPembayaran().listen((data) {
+      if (mounted) setState(() => _allData = data);
+    });
+  }
 
   @override
   void dispose() {
+    _sub?.cancel();
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -31,30 +52,26 @@ class _PengawasMonitoringScreenState extends State<PengawasMonitoringScreen> {
     return 'Rp ${buffer.toString()}';
   }
 
-  String _formatJatuhTempo(DateTime? dt) {
-    if (dt == null) return '-';
-    final bulan = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-    return '${dt.day} ${bulan[dt.month]} ${dt.year}';
-  }
-
   Color _statusColor(String status) {
     switch (status) {
-      case 'berhasil': return AppTheme.primaryGreen;
-      case 'pending': return const Color(0xFFE65100);
-      case 'ditolak': return AppTheme.errorRed;
-      default: return AppTheme.greyText;
+      case 'berhasil':
+        return AppTheme.primaryGreen;
+      case 'pending':
+        return const Color(0xFFE65100);
+      case 'ditolak':
+        return AppTheme.errorRed;
+      default:
+        return AppTheme.greyText;
     }
   }
 
-  List<PembayaranModel> _applyFilter(List<PembayaranModel> all) {
-    final q = _searchController.text.toLowerCase();
-    return all.where((p) {
+  List<PembayaranModel> get _filtered {
+    final q = _searchQuery.toLowerCase();
+    return _allData.where((p) {
       final matchQ = q.isEmpty ||
           p.noKios.toLowerCase().contains(q) ||
           p.namaPedagang.toLowerCase().contains(q);
-      final matchStatus =
-          _filterStatus == 'semua' || p.status == _filterStatus;
+      final matchStatus = _filterStatus == 'semua' || p.status == _filterStatus;
       return matchQ && matchStatus;
     }).toList();
   }
@@ -77,185 +94,182 @@ class _PengawasMonitoringScreenState extends State<PengawasMonitoringScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
+    final filtered = _filtered;
+    final totalBerhasil = _allData.where((p) => p.status == 'berhasil').length;
+    final totalPending = _allData.where((p) => p.status == 'pending').length;
+    final totalDitolak = _allData.where((p) => p.status == 'ditolak').length;
+    final totalNominal = _allData
+        .where((p) => p.status == 'berhasil')
+        .fold(0.0, (s, p) => s + p.jumlah);
+
     return Scaffold(
       backgroundColor: AppTheme.bgColor,
       appBar: AppBar(
         title: const Text('Monitoring Pembayaran'),
         automaticallyImplyLeading: false,
       ),
-      body: StreamBuilder<List<PembayaranModel>>(
-        stream: FirestoreService.streamSemuaPembayaran(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator(
-                    color: AppTheme.primaryGreen));
-          }
+      body: Column(
+        children: [
+          // Summary cards
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                    child: _miniCard(
+                        'Berhasil', '$totalBerhasil', AppTheme.primaryGreen)),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: _miniCard(
+                        'Pending', '$totalPending', const Color(0xFFE65100))),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: _miniCard(
+                        'Ditolak', '$totalDitolak', AppTheme.errorRed)),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: _miniCard('Total Masuk', _formatRupiah(totalNominal),
+                        const Color(0xFF1565C0))),
+              ],
+            ),
+          ),
 
-          final allData = snapshot.data ?? [];
-          final filtered = _applyFilter(allData);
-
-          final totalBerhasil =
-              allData.where((p) => p.status == 'berhasil').length;
-          final totalPending =
-              allData.where((p) => p.status == 'pending').length;
-          final totalDitolak =
-              allData.where((p) => p.status == 'ditolak').length;
-          final totalNominal = allData
-              .where((p) => p.status == 'berhasil')
-              .fold(0.0, (s, p) => s + p.jumlah);
-
-          return Column(
-            children: [
-              // Summary cards
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(12),
-                child: Row(
+          // Search & Filter
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  decoration: InputDecoration(
+                    hintText: 'Cari no kios / nama pedagang...',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
                   children: [
-                    Expanded(child: _miniCard('Berhasil', '$totalBerhasil', AppTheme.primaryGreen)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _miniCard('Pending', '$totalPending', const Color(0xFFE65100))),
-                    const SizedBox(width: 8),
-                    Expanded(child: _miniCard('Ditolak', '$totalDitolak', AppTheme.errorRed)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _miniCard('Total Masuk', _formatRupiah(totalNominal), const Color(0xFF1565C0))),
+                    _filterChip('semua', 'Semua'),
+                    const SizedBox(width: 6),
+                    _filterChip('berhasil', 'Berhasil'),
+                    const SizedBox(width: 6),
+                    _filterChip('pending', 'Pending'),
+                    const SizedBox(width: 6),
+                    _filterChip('ditolak', 'Ditolak'),
                   ],
                 ),
-              ),
+              ],
+            ),
+          ),
 
-              // Search & Filter
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _searchController,
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        hintText: 'Cari no kios / nama pedagang...',
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        contentPadding:
-                        const EdgeInsets.symmetric(vertical: 10),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {});
-                          },
-                        )
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _filterChip('semua', 'Semua'),
-                        const SizedBox(width: 6),
-                        _filterChip('berhasil', 'Berhasil'),
-                        const SizedBox(width: 6),
-                        _filterChip('pending', 'Pending'),
-                        const SizedBox(width: 6),
-                        _filterChip('ditolak', 'Ditolak'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+          const Divider(height: 1),
 
-              const Divider(height: 1),
-
-              // List
-              Expanded(
-                child: filtered.isEmpty
-                    ? const Center(
+          // List
+          Expanded(
+            child: filtered.isEmpty
+                ? const Center(
                     child: Text('Tidak ada data',
                         style: TextStyle(color: AppTheme.greyText)))
-                    : ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final p = filtered[index];
-                    final color = _statusColor(p.status);
-                    final isDitolak = p.status == 'ditolak';
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final p = filtered[index];
+                      final color = _statusColor(p.status);
+                      final isDitolak = p.status == 'ditolak';
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border(
-                          left: BorderSide(color: color, width: 4),
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border(
+                            left: BorderSide(color: color, width: 4),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2)),
+                          ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2)),
-                        ],
-                      ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        title: Row(
-                          children: [
-                            Text(p.namaPedagang.isNotEmpty
-                                ? p.namaPedagang
-                                : '-',
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          title: Row(
+                            children: [
+                              Text(
+                                p.namaPedagang.isNotEmpty
+                                    ? p.namaPedagang
+                                    : '-',
                                 style: const TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: AppTheme.darkText)),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: color.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
+                                    color: AppTheme.darkText),
                               ),
-                              child: Text(p.statusLabel,
-                                  style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                      color: color)),
-                            ),
-                          ],
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text('Kios ${p.noKios} • ${p.jenisPajakLabel} • ${_formatRupiah(p.jumlah)}',
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(p.statusLabel,
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: color)),
+                              ),
+                            ],
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(
+                                'Kios ${p.noKios} • ${p.jenisPajakLabel} • ${_formatRupiah(p.jumlah)}',
                                 style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppTheme.greyText)),
-                            Text('Tanggal: ${p.tanggal.length >= 10 ? p.tanggal.substring(0, 10) : p.tanggal} • ${p.metodeBayar}',
+                                    fontSize: 12, color: AppTheme.greyText),
+                              ),
+                              Text(
+                                'Tanggal: ${p.tanggal.length >= 10 ? p.tanggal.substring(0, 10) : p.tanggal} • ${p.metodeBayar}',
                                 style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppTheme.greyText)),
-                          ],
+                                    fontSize: 11, color: AppTheme.greyText),
+                              ),
+                            ],
+                          ),
+                          trailing: isDitolak
+                              ? IconButton(
+                                  icon: const Icon(Icons.info_outline_rounded,
+                                      color: AppTheme.errorRed),
+                                  tooltip: 'Lihat alasan penolakan',
+                                  onPressed: () =>
+                                      _showAlasanPenolakan(p.alasanPenolakan),
+                                )
+                              : null,
                         ),
-                        trailing: isDitolak
-                            ? IconButton(
-                          icon: const Icon(
-                              Icons.info_outline_rounded,
-                              color: AppTheme.errorRed),
-                          tooltip: 'Lihat alasan penolakan',
-                          onPressed: () => _showAlasanPenolakan(
-                              p.alasanPenolakan),
-                        )
-                            : null,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
