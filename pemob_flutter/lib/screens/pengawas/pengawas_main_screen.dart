@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_theme.dart';
 import 'pengawas_dashboard_screen.dart';
 import 'pengawas_monitoring_screen.dart';
 import 'pengawas_laporan_screen.dart';
+import 'pengawas_profil_screen.dart';
 
 class PengawasMainScreen extends StatefulWidget {
   const PengawasMainScreen({super.key});
@@ -17,6 +19,7 @@ class _PengawasMainScreenState extends State<PengawasMainScreen> {
     PengawasDashboardScreen(),
     PengawasMonitoringScreen(),
     PengawasLaporanScreen(),
+    PengawasProfilScreen(),
   ];
 
   @override
@@ -26,6 +29,12 @@ class _PengawasMainScreenState extends State<PengawasMainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppTheme.primaryGreen,
+        unselectedItemColor: AppTheme.greyText,
+        selectedLabelStyle:
+            const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 11),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
@@ -41,6 +50,11 @@ class _PengawasMainScreenState extends State<PengawasMainScreen> {
             icon: Icon(Icons.description_outlined),
             activeIcon: Icon(Icons.description_rounded),
             label: 'Laporan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline_rounded),
+            activeIcon: Icon(Icons.person_rounded),
+            label: 'Profil',
           ),
         ],
       ),

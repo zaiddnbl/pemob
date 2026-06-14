@@ -91,7 +91,7 @@ class _AdminTagihanScreenState extends State<AdminTagihanScreen> {
             ? 'Harga retribusi berhasil diupdate ✅'
             : 'Gagal mengupdate harga'),
         backgroundColor:
-        success ? AppTheme.accentGreen : AppTheme.errorRed,
+            success ? AppTheme.accentGreen : AppTheme.errorRed,
       ),
     );
 
@@ -115,10 +115,7 @@ class _AdminTagihanScreenState extends State<AdminTagihanScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: _navyDark),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text('Manajemen Tagihan',
             style: TextStyle(
                 color: _navyDark,
@@ -127,207 +124,207 @@ class _AdminTagihanScreenState extends State<AdminTagihanScreen> {
       ),
       body: _isLoading
           ? const Center(
-          child:
-          CircularProgressIndicator(color: _navyDark))
+              child:
+                  CircularProgressIndicator(color: _navyDark))
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Info banner
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _navyDark,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline_rounded,
-                      color: AppTheme.accentYellow, size: 22),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Perubahan harga akan langsung berlaku di halaman pembayaran semua pedagang.',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                          height: 1.4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Harga saat ini
-            const Text('Harga Retribusi Saat Ini',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: _navyDark)),
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _currentCard(
-                    Icons.today_rounded,
-                    'Harian',
-                    _formatRupiah(
-                        _tagihan?.hargaHarian ?? 5000),
-                    const Color(0xFF1B6B3A),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _currentCard(
-                    Icons.date_range_rounded,
-                    'Mingguan',
-                    _formatRupiah(
-                        _tagihan?.hargaMingguan ?? 35000),
-                    const Color(0xFF1A3C34),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _currentCard(
-                    Icons.calendar_month_rounded,
-                    'Bulanan',
-                    _formatRupiah(
-                        _tagihan?.hargaBulanan ?? 150000),
-                    const Color(0xFF0F4C35),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Form edit
-            const Text('Edit Harga Retribusi',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: _navyDark)),
-            const SizedBox(height: 12),
-
-            Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4)),
-                ],
-              ),
               child: Column(
-                children: [
-                  _inputHarga(
-                    controller: _harianCtrl,
-                    label: 'Harga Harian',
-                    icon: Icons.today_rounded,
-                    color: const Color(0xFF1B6B3A),
-                  ),
-                  const SizedBox(height: 14),
-                  _inputHarga(
-                    controller: _mingguanCtrl,
-                    label: 'Harga Mingguan',
-                    icon: Icons.date_range_rounded,
-                    color: _navyDark,
-                  ),
-                  const SizedBox(height: 14),
-                  _inputHarga(
-                    controller: _bulananCtrl,
-                    label: 'Harga Bulanan',
-                    icon: Icons.calendar_month_rounded,
-                    color: const Color(0xFF0F4C35),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed:
-                      _isSaving ? null : _saveTagihan,
-                      icon: _isSaving
-                          ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white))
-                          : const Icon(Icons.save_rounded,
-                          size: 18, color: Colors.white),
-                      label: Text(
-                          _isSaving
-                              ? 'Menyimpan...'
-                              : 'SIMPAN PERUBAHAN',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _navyDark,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Catatan
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppTheme.accentYellow.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: AppTheme.accentYellow
-                        .withOpacity(0.3)),
-              ),
-              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Info banner
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _navyDark,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info_outline_rounded,
+                            color: AppTheme.accentYellow, size: 22),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Perubahan harga akan langsung berlaku di halaman pembayaran semua pedagang.',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                                height: 1.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Harga saat ini
+                  const Text('Harga Retribusi Saat Ini',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: _navyDark)),
+                  const SizedBox(height: 12),
+
                   Row(
                     children: [
-                      Icon(Icons.lightbulb_outline_rounded,
-                          color: AppTheme.accentYellow,
-                          size: 18),
-                      SizedBox(width: 6),
-                      Text('Catatan',
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _navyDark)),
+                      Expanded(
+                        child: _currentCard(
+                          Icons.today_rounded,
+                          'Harian',
+                          _formatRupiah(
+                              _tagihan?.hargaHarian ?? 5000),
+                          const Color(0xFF1B6B3A),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _currentCard(
+                          Icons.date_range_rounded,
+                          'Mingguan',
+                          _formatRupiah(
+                              _tagihan?.hargaMingguan ?? 35000),
+                          const Color(0xFF1A3C34),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _currentCard(
+                          Icons.calendar_month_rounded,
+                          'Bulanan',
+                          _formatRupiah(
+                              _tagihan?.hargaBulanan ?? 150000),
+                          const Color(0xFF0F4C35),
+                        ),
+                      ),
                     ],
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    '• Harian: pedagang membayar per 1 hari\n'
-                        '• Mingguan: pedagang membayar per 7 hari\n'
-                        '• Bulanan: pedagang membayar per 30 hari\n'
-                        '• Jatuh tempo pedagang otomatis terupdate setelah pembayaran',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: _navyDark,
-                        height: 1.6),
+
+                  const SizedBox(height: 24),
+
+                  // Form edit
+                  const Text('Edit Harga Retribusi',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: _navyDark)),
+                  const SizedBox(height: 12),
+
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4)),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _inputHarga(
+                          controller: _harianCtrl,
+                          label: 'Harga Harian',
+                          icon: Icons.today_rounded,
+                          color: const Color(0xFF1B6B3A),
+                        ),
+                        const SizedBox(height: 14),
+                        _inputHarga(
+                          controller: _mingguanCtrl,
+                          label: 'Harga Mingguan',
+                          icon: Icons.date_range_rounded,
+                          color: _navyDark,
+                        ),
+                        const SizedBox(height: 14),
+                        _inputHarga(
+                          controller: _bulananCtrl,
+                          label: 'Harga Bulanan',
+                          icon: Icons.calendar_month_rounded,
+                          color: const Color(0xFF0F4C35),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed:
+                                _isSaving ? null : _saveTagihan,
+                            icon: _isSaving
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white))
+                                : const Icon(Icons.save_rounded,
+                                    size: 18, color: Colors.white),
+                            label: Text(
+                                _isSaving
+                                    ? 'Menyimpan...'
+                                    : 'SIMPAN PERUBAHAN',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _navyDark,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Catatan
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentYellow.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: AppTheme.accentYellow
+                              .withOpacity(0.3)),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.lightbulb_outline_rounded,
+                                color: AppTheme.accentYellow,
+                                size: 18),
+                            SizedBox(width: 6),
+                            Text('Catatan',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: _navyDark)),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          '• Harian: pedagang membayar per 1 hari\n'
+                          '• Mingguan: pedagang membayar per 7 hari\n'
+                          '• Bulanan: pedagang membayar per 30 hari\n'
+                          '• Jatuh tempo pedagang otomatis terupdate setelah pembayaran',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: _navyDark,
+                              height: 1.6),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 

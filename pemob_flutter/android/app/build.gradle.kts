@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    // ✅ "kotlin-android" dihapus — sudah dihandle Flutter
+    id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
