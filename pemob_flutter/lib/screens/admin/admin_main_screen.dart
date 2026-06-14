@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../models/user_model.dart';
 import '../login_screen.dart';
 import 'admin_dashboard_screen.dart';
 import 'admin_user_screen.dart';
@@ -18,47 +16,42 @@ class AdminMainScreen extends StatefulWidget {
 }
 
 class _AdminMainScreenState extends State<AdminMainScreen> {
+  // 0=Home 1=User 2=Kios 3=Monitoring 4=Laporan 5=Tagihan 6=Profil
   int _currentIndex = 0;
 
   static const Color _navyDark = Color(0xFF1A3C34);
 
   final List<Widget> _screens = const [
-    AdminDashboardScreen(),
-    AdminUserScreen(),
-    AdminKiosScreen(),
-    AdminMonitoringScreen(),
-    AdminLaporanScreen(),
+    AdminDashboardScreen(),   // 0
+    AdminUserScreen(),         // 1
+    AdminKiosScreen(),         // 2
+    AdminMonitoringScreen(),   // 3
+    AdminLaporanScreen(),      // 4
+    AdminTagihanScreen(),      // 5 — FAB
+    AdminProfilScreen(),       // 6 — Avatar
   ];
-
-  void _onFabTap() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AdminTagihanScreen()),
-    );
-  }
-
-  void _openProfil() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AdminProfilScreen()),
-    ).then((_) => setState(() {}));
-  }
 
   @override
   Widget build(BuildContext context) {
+    // Tentukan index bottom nav yang aktif
+    // (5 dan 6 tidak ada di bottom nav, tapi tetap tampil di IndexedStack)
+    final bottomActiveIndex = _currentIndex <= 4 ? _currentIndex : -1;
+
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
       floatingActionButton: FloatingActionButton(
-        onPressed: _onFabTap,
-        backgroundColor: _navyDark,
+        onPressed: () => setState(() => _currentIndex = 5),
+        backgroundColor: _currentIndex == 5 ? Colors.white : _navyDark,
         elevation: 4,
         shape: const CircleBorder(),
         tooltip: 'Tagihan',
-        child: const Icon(Icons.receipt_rounded,
-            color: Colors.white, size: 26),
+        child: Icon(
+          Icons.receipt_rounded,
+          color: _currentIndex == 5 ? _navyDark : Colors.white,
+          size: 26,
+        ),
       ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
@@ -71,9 +64,9 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
             children: [
               _navItem(Icons.home_outlined, Icons.home_rounded, 'Home', 0),
               _navItem(Icons.people_outline_rounded, Icons.people_rounded, 'User', 1),
-              const SizedBox(width: 48),
+              const SizedBox(width: 48), // Space for FAB
               _navItem(Icons.monitor_outlined, Icons.monitor_rounded, 'Monitoring', 3),
-              _navItem(Icons.description_outlined, Icons.description_rounded, 'Laporan', 4),
+              _navItem(Icons.person_outline_rounded, Icons.person_rounded, 'Profil', 6),
             ],
           ),
         ),
