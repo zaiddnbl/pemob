@@ -59,7 +59,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
               _navItem(Icons.home_outlined, Icons.home_rounded, 'Home', 0),
               _navItem(Icons.people_outline_rounded, Icons.people_rounded, 'User', 1),
               const SizedBox(width: 48), // Space for FAB
-              _navItem(Icons.payment_outlined, Icons.payment_rounded, 'Bayar', 3),
+              _navItem(Icons.payment_outlined, Icons.payment_rounded, 'Monitoring', 3),
               _navItem(Icons.description_outlined, Icons.description_rounded, 'Laporan', 4),
             ],
           ),
