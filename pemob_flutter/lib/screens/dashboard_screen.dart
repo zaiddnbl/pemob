@@ -62,8 +62,19 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   String _formatTanggalPanjang(DateTime dt) {
     final bulan = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agt',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des'
     ];
     return '${dt.day} ${bulan[dt.month]} ${dt.year}';
   }
@@ -75,8 +86,7 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   double get _totalBulanIni {
     final now = DateTime.now();
-    return _riwayat
-        .where((p) {
+    return _riwayat.where((p) {
       try {
         final parts = p.tanggal.split('-');
         final y = int.parse(parts[0]);
@@ -85,8 +95,7 @@ class DashboardScreenState extends State<DashboardScreen> {
       } catch (_) {
         return false;
       }
-    })
-        .fold(0.0, (sum, p) => sum + p.jumlah);
+    }).fold(0.0, (sum, p) => sum + p.jumlah);
   }
 
   @override
@@ -135,7 +144,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               actions: [
-                // Notif badge (stream real-time)
+                // Notif badge
                 StreamBuilder<int>(
                   stream: FirestoreService.streamJumlahBelumDibaca(noKios),
                   builder: (context, snap) {
@@ -176,17 +185,22 @@ class DashboardScreenState extends State<DashboardScreen> {
                     );
                   },
                 ),
+
+                // ── Avatar — bisa diklik ke tab Profil ──
                 Padding(
                   padding: const EdgeInsets.only(right: 14),
-                  child: CircleAvatar(
-                    radius: 17,
-                    backgroundColor: AppTheme.accentYellow,
-                    child: Text(
-                      firstName.isNotEmpty ? firstName[0].toUpperCase() : 'P',
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.primaryGreen),
+                  child: GestureDetector(
+                    onTap: () => MainScreen.goToTab(3), // index 3 = Profil
+                    child: CircleAvatar(
+                      radius: 17,
+                      backgroundColor: AppTheme.accentYellow,
+                      child: Text(
+                        firstName.isNotEmpty ? firstName[0].toUpperCase() : 'P',
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.primaryGreen),
+                      ),
                     ),
                   ),
                 ),
@@ -202,7 +216,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                   ),
                   child: Stack(
                     children: [
-                      // Lingkaran dekorasi
                       Positioned(
                         top: -30,
                         right: -30,
@@ -227,7 +240,6 @@ class DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                       ),
-                      // Konten
                       Positioned(
                         bottom: 20,
                         left: 20,
@@ -315,7 +327,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Belum ada kios warning ────────────
+                    // Belum ada kios warning
                     if (belumAdaKios)
                       Container(
                         width: double.infinity,
@@ -336,17 +348,15 @@ class DashboardScreenState extends State<DashboardScreen> {
                               child: Text(
                                 'Kamu belum memiliki kios. Hubungi admin untuk assign kios.',
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppTheme.darkText),
+                                    fontSize: 12, color: AppTheme.darkText),
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                    // ── Card Info Kios & Tagihan ──────────
+                    // Card Info Kios & Tagihan
                     if (!belumAdaKios) ...[
-                      // Card utama — mirip web
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
@@ -369,12 +379,10 @@ class DashboardScreenState extends State<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text('Kios',
                                         style: TextStyle(
@@ -435,10 +443,10 @@ class DashboardScreenState extends State<DashboardScreen> {
                                     value: _jatuhTempo == null
                                         ? '-'
                                         : _sisaHari < 0
-                                        ? 'Lewat jatuh tempo!'
-                                        : _sisaHari == 0
-                                        ? 'Hari ini!'
-                                        : '✓ $_sisaHari hari lagi',
+                                            ? 'Lewat jatuh tempo!'
+                                            : _sisaHari == 0
+                                                ? 'Hari ini!'
+                                                : '✓ $_sisaHari hari lagi',
                                     valueColor: _sisaHari <= 1
                                         ? const Color(0xFFFF5252)
                                         : const Color(0xFF69F0AE),
@@ -452,7 +460,7 @@ class DashboardScreenState extends State<DashboardScreen> {
                                   child: _cardStatItem(
                                     label: 'Bayar Bulan Ini',
                                     value:
-                                    'Rp ${_formatRupiah(_totalBulanIni)}',
+                                        'Rp ${_formatRupiah(_totalBulanIni)}',
                                   ),
                                 ),
                               ],
@@ -460,16 +468,9 @@ class DashboardScreenState extends State<DashboardScreen> {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 16),
-
-                      // ── Alert jatuh tempo ─────────────
-                      if (_jatuhTempo != null && _sisaHari <= 3)
-                        _buildAlert(),
-
+                      if (_jatuhTempo != null && _sisaHari <= 3) _buildAlert(),
                       const SizedBox(height: 16),
-
-                      // ── Tombol Bayar ──────────────────
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -485,7 +486,7 @@ class DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 20),
 
-                    // ── Riwayat Terakhir ──────────────────
+                    // Riwayat Terakhir
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -534,19 +535,17 @@ class DashboardScreenState extends State<DashboardScreen> {
                         ),
                       )
                     else
-                    // Grid 2 kolom riwayat terakhir
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                           childAspectRatio: 1.55,
                         ),
-                        itemCount:
-                        _riwayat.length > 4 ? 4 : _riwayat.length,
+                        itemCount: _riwayat.length > 4 ? 4 : _riwayat.length,
                         itemBuilder: (context, index) =>
                             _riwayatCard(_riwayat[index]),
                       ),
@@ -592,13 +591,13 @@ class DashboardScreenState extends State<DashboardScreen> {
     final color = isLewat
         ? AppTheme.errorRed
         : isDanger
-        ? const Color(0xFFE65100)
-        : AppTheme.primaryGreen;
+            ? const Color(0xFFE65100)
+            : AppTheme.primaryGreen;
     final msg = isLewat
         ? 'Tagihan sudah melewati jatuh tempo!'
         : _sisaHari == 0
-        ? 'Tagihan jatuh tempo hari ini!'
-        : 'Tagihan jatuh tempo $_sisaHari hari lagi';
+            ? 'Tagihan jatuh tempo hari ini!'
+            : 'Tagihan jatuh tempo $_sisaHari hari lagi';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -615,9 +614,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             child: Text(msg,
                 style: TextStyle(
-                    fontSize: 12,
-                    color: color,
-                    fontWeight: FontWeight.w600)),
+                    fontSize: 12, color: color, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -664,8 +661,8 @@ class DashboardScreenState extends State<DashboardScreen> {
                 p.jenisPajak == 'harian'
                     ? Icons.today_rounded
                     : p.jenisPajak == 'mingguan'
-                    ? Icons.date_range_rounded
-                    : Icons.calendar_month_rounded,
+                        ? Icons.date_range_rounded
+                        : Icons.calendar_month_rounded,
                 color: AppTheme.accentYellow,
                 size: 18,
               ),
