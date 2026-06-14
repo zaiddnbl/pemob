@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../login_screen.dart';
+import 'admin_profil_screen.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 import '../../theme/app_theme.dart';
-import '../edit_profil_screen.dart';
-import '../login_screen.dart';
+
+
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -20,9 +22,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   double _totalPemasukan = 0;
   int _berhasil = 0, _pending = 0, _ditolak = 0;
   bool _isLoading = true;
-  final _searchController = TextEditingController();
 
-  // Warna navy gelap untuk card (mirip referensi tapi hijau)
   static const Color _navyDark = Color(0xFF1A3C34);
   static const Color _navyMed = Color(0xFF2D5A4E);
   static const Color _bgGrey = Color(0xFFF4F6F5);
@@ -31,12 +31,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   void initState() {
     super.initState();
     _loadData();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -74,6 +68,38 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return 'Selamat Malam';
   }
 
+  void _handleLogout() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Keluar'),
+        content: const Text('Apakah kamu yakin ingin keluar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await FirebaseAuth.instance.signOut();
+              SessionUser.logout();
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                (_) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Keluar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = SessionUser.currentUser;
@@ -86,7 +112,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         color: AppTheme.primaryGreen,
         child: CustomScrollView(
           slivers: [
-            // ── Header ────────────────────────────────────
             SliverToBoxAdapter(
               child: Container(
                 color: Colors.white,
@@ -94,72 +119,55 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Top row: Logo + Avatar
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Logo
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: _bgGrey,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.grid_view_rounded,
-                              color: _navyDark, size: 22),
-                        ),
-                        // Notif + Avatar
                         Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: _bgGrey,
+                                color: _navyDark,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Stack(
-                                children: [
-                                  const Icon(Icons.notifications_outlined,
-                                      color: _navyDark, size: 22),
-                                  if (_pending > 0)
-                                    Positioned(
-                                      right: 0,
-                                      top: 0,
-                                      child: Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
+                              child: const Icon(Icons.storefront_rounded,
+                                  color: Colors.white, size: 20),
                             ),
                             const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => const EditProfilScreen()),
-                              ).then((_) => setState(() {})),
-                              child: CircleAvatar(
-                                radius: 18,
-                                backgroundColor: _navyDark,
-                                child: Text(
-                                  firstName[0].toUpperCase(),
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 14),
-                                ),
+                            const Text(
+                              'SIPESEL',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: _navyDark,
+                                letterSpacing: 1.5,
                               ),
                             ),
                           ],
                         ),
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const AdminProfilScreen()),
+                          ).then((_) => setState(() {})),
+                          child: CircleAvatar(
+                            radius: 20,
+                            backgroundColor: _navyDark,
+                            child: Text(
+                              firstName[0].toUpperCase(),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 20),
+
                     Text(
                       'Hi, $firstName!',
                       style: const TextStyle(
@@ -175,30 +183,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       style: const TextStyle(
                           fontSize: 13, color: AppTheme.greyText),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Search bar
-                    Container(
-                      decoration: BoxDecoration(
-                        color: _bgGrey,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: const InputDecoration(
-                          hintText: 'Cari transaksi, user, kios...',
-                          hintStyle: TextStyle(
-                              fontSize: 13, color: AppTheme.greyText),
-                          prefixIcon: Icon(Icons.search_rounded,
-                              color: AppTheme.greyText, size: 20),
-                          border: InputBorder.none,
-                          contentPadding:
-                          EdgeInsets.symmetric(vertical: 14),
-                          filled: true,
-                          fillColor: Colors.transparent,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -207,358 +191,293 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             SliverToBoxAdapter(
               child: _isLoading
                   ? const Padding(
-                padding: EdgeInsets.all(40),
-                child: Center(
-                    child: CircularProgressIndicator(
-                        color: AppTheme.primaryGreen)),
-              )
+                      padding: EdgeInsets.all(40),
+                      child: Center(
+                          child: CircularProgressIndicator(
+                              color: AppTheme.primaryGreen)),
+                    )
                   : Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Welcome Banner ────────────────
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: _navyDark,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          // Welcome Banner
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: _navyDark,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
                               children: [
-                                const Text(
-                                  'Dashboard Admin',
-                                  style: TextStyle(
-                                    color: AppTheme.accentYellow,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Dashboard Admin',
+                                        style: TextStyle(
+                                          color: AppTheme.accentYellow,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Kelola sistem pembayaran\nretribusi Pasar Wadungasri',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      if (_pending > 0)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFD97706),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            '$_pending menunggu verifikasi',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Kelola sistem pembayaran\nretribusi Pasar Wadungasri',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 12,
-                                    height: 1.4,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 7),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentYellow,
-                                    borderRadius:
-                                    BorderRadius.circular(20),
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: const Text(
-                                    'Lihat Laporan →',
-                                    style: TextStyle(
-                                      color: _navyDark,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                    ),
+                                  child: const Icon(
+                                    Icons.storefront_rounded,
+                                    color: Colors.white,
+                                    size: 40,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Icon(
-                              Icons.storefront_rounded,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
 
-                    const SizedBox(height: 20),
+                          const SizedBox(height: 20),
 
-                    // ── Stats Row ─────────────────────
-                    Row(
-                      children: [
-                        _statMini('Total Pedagang', '$_totalPedagang',
-                            Icons.people_rounded, _navyDark),
-                        const SizedBox(width: 10),
-                        _statMini('Kios Aktif', '$_totalKiosAktif',
-                            Icons.storefront_rounded, _navyMed),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _statMini('Pemasukan Bulan Ini',
-                            _formatRupiah(_totalPemasukan),
-                            Icons.payments_rounded,
-                            const Color(0xFF1B6B3A)),
-                        const SizedBox(width: 10),
-                        _statMini('Menunggu Verifikasi', '$_pending',
-                            Icons.pending_rounded,
-                            const Color(0xFFB45309)),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Transaksi Terbaru ─────────────
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Transaksi Masuk',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: _navyDark,
-                          ),
-                        ),
-                        Text(
-                          'lihat semua',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.primaryGreen,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Grid 2 kolom — status transaksi
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 1.3,
-                      children: [
-                        _trxCard('Disetujui', '$_berhasil transaksi',
-                            Icons.check_circle_rounded,
-                            AppTheme.primaryGreen,
-                            _berhasil / (_berhasil + _pending + _ditolak + 0.001)),
-                        _trxCard('Pending', '$_pending transaksi',
-                            Icons.pending_rounded,
-                            const Color(0xFFD97706),
-                            _pending / (_berhasil + _pending + _ditolak + 0.001)),
-                        _trxCard('Ditolak', '$_ditolak transaksi',
-                            Icons.cancel_rounded,
-                            AppTheme.errorRed,
-                            _ditolak / (_berhasil + _pending + _ditolak + 0.001)),
-                        _trxCard('Total', '${_berhasil + _pending + _ditolak} transaksi',
-                            Icons.receipt_long_rounded,
-                            _navyDark,
-                            1.0),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Chart ─────────────────────────
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                          // Stats 2x2
                           Row(
-                            mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
+                            children: [
+                              _statMini('Total Pedagang', '$_totalPedagang',
+                                  Icons.people_rounded, _navyDark),
+                              const SizedBox(width: 10),
+                              _statMini('Kios Aktif', '$_totalKiosAktif',
+                                  Icons.storefront_rounded, _navyMed),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              _statMini('Pemasukan Bulan Ini',
+                                  _formatRupiah(_totalPemasukan),
+                                  Icons.payments_rounded,
+                                  const Color(0xFF1B6B3A)),
+                              const SizedBox(width: 10),
+                              _statMini('Menunggu Verifikasi', '$_pending',
+                                  Icons.pending_rounded,
+                                  const Color(0xFFB45309)),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Section title
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'Statistik Pembayaran',
+                                'Transaksi Masuk',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w800,
                                   color: _navyDark,
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: _bgGrey,
-                                  borderRadius:
-                                  BorderRadius.circular(20),
-                                ),
-                                child: const Text('Bulan ini',
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        color: AppTheme.greyText,
-                                        fontWeight:
-                                        FontWeight.w600)),
-                              ),
+                              Text('lihat semua',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppTheme.primaryGreen,
+                                      fontWeight: FontWeight.w600)),
                             ],
                           ),
+                          const SizedBox(height: 12),
+
+                          // Grid status cards
+                          GridView.count(
+                            crossAxisCount: 2,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 1.3,
+                            children: [
+                              _trxCard('Disetujui', '$_berhasil transaksi',
+                                  Icons.check_circle_rounded,
+                                  AppTheme.primaryGreen,
+                                  _berhasil / (_berhasil + _pending + _ditolak + 0.001)),
+                              _trxCard('Pending', '$_pending transaksi',
+                                  Icons.pending_rounded,
+                                  const Color(0xFFD97706),
+                                  _pending / (_berhasil + _pending + _ditolak + 0.001)),
+                              _trxCard('Ditolak', '$_ditolak transaksi',
+                                  Icons.cancel_rounded,
+                                  AppTheme.errorRed,
+                                  _ditolak / (_berhasil + _pending + _ditolak + 0.001)),
+                              _trxCard('Total', '${_berhasil + _pending + _ditolak} transaksi',
+                                  Icons.receipt_long_rounded,
+                                  _navyDark, 1.0),
+                            ],
+                          ),
+
                           const SizedBox(height: 20),
-                          (_berhasil + _pending + _ditolak) == 0
-                              ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(20),
-                              child: Text('Belum ada data',
-                                  style: TextStyle(
-                                      color:
-                                      AppTheme.greyText)),
-                            ),
-                          )
-                              : SizedBox(
-                            height: 160,
-                            child: BarChart(
-                              BarChartData(
-                                alignment: BarChartAlignment
-                                    .spaceAround,
-                                maxY: (_berhasil +
-                                    _pending +
-                                    _ditolak)
-                                    .toDouble() *
-                                    1.3,
-                                barGroups: [
-                                  BarChartGroupData(
-                                    x: 0,
-                                    barRods: [
-                                      BarChartRodData(
-                                        toY: _berhasil
-                                            .toDouble(),
-                                        color: AppTheme
-                                            .primaryGreen,
-                                        width: 36,
-                                        borderRadius:
-                                        const BorderRadius
-                                            .vertical(
-                                          top: Radius
-                                              .circular(8),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  BarChartGroupData(
-                                    x: 1,
-                                    barRods: [
-                                      BarChartRodData(
-                                        toY: _pending
-                                            .toDouble(),
-                                        color: const Color(
-                                            0xFFD97706),
-                                        width: 36,
-                                        borderRadius:
-                                        const BorderRadius
-                                            .vertical(
-                                          top: Radius
-                                              .circular(8),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  BarChartGroupData(
-                                    x: 2,
-                                    barRods: [
-                                      BarChartRodData(
-                                        toY: _ditolak
-                                            .toDouble(),
-                                        color:
-                                        AppTheme.errorRed,
-                                        width: 36,
-                                        borderRadius:
-                                        const BorderRadius
-                                            .vertical(
-                                          top: Radius
-                                              .circular(8),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                                titlesData: FlTitlesData(
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget:
-                                          (val, _) {
-                                        const labels = [
-                                          'Disetujui',
-                                          'Pending',
-                                          'Ditolak'
-                                        ];
-                                        return Padding(
-                                          padding:
-                                          const EdgeInsets
-                                              .only(
-                                              top: 6),
-                                          child: Text(
-                                            labels[val
-                                                .toInt()],
-                                            style: const TextStyle(
-                                                fontSize: 10,
-                                                color: AppTheme
-                                                    .greyText),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      reservedSize: 24,
-                                      getTitlesWidget:
-                                          (val, _) => Text(
-                                        '${val.toInt()}',
-                                        style: const TextStyle(
-                                            fontSize: 9,
-                                            color: AppTheme
-                                                .greyText),
-                                      ),
-                                    ),
-                                  ),
-                                  topTitles: const AxisTitles(
-                                      sideTitles: SideTitles(
-                                          showTitles: false)),
-                                  rightTitles:
-                                  const AxisTitles(
-                                      sideTitles:
-                                      SideTitles(
-                                          showTitles:
-                                          false)),
+
+                          // Chart
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
-                                gridData:
-                                const FlGridData(show: false),
-                                borderData:
-                                FlBorderData(show: false),
-                              ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Statistik Pembayaran',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                            color: _navyDark)),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: _bgGrey,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: const Text('Bulan ini',
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              color: AppTheme.greyText,
+                                              fontWeight: FontWeight.w600)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                (_berhasil + _pending + _ditolak) == 0
+                                    ? const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(20),
+                                          child: Text('Belum ada data',
+                                              style: TextStyle(
+                                                  color: AppTheme.greyText)),
+                                        ),
+                                      )
+                                    : SizedBox(
+                                        height: 160,
+                                        child: BarChart(
+                                          BarChartData(
+                                            alignment: BarChartAlignment.spaceAround,
+                                            maxY: (_berhasil + _pending + _ditolak).toDouble() * 1.3,
+                                            barGroups: [
+                                              BarChartGroupData(x: 0, barRods: [
+                                                BarChartRodData(
+                                                  toY: _berhasil.toDouble(),
+                                                  color: AppTheme.primaryGreen,
+                                                  width: 36,
+                                                  borderRadius: const BorderRadius.vertical(
+                                                      top: Radius.circular(8)),
+                                                ),
+                                              ]),
+                                              BarChartGroupData(x: 1, barRods: [
+                                                BarChartRodData(
+                                                  toY: _pending.toDouble(),
+                                                  color: const Color(0xFFD97706),
+                                                  width: 36,
+                                                  borderRadius: const BorderRadius.vertical(
+                                                      top: Radius.circular(8)),
+                                                ),
+                                              ]),
+                                              BarChartGroupData(x: 2, barRods: [
+                                                BarChartRodData(
+                                                  toY: _ditolak.toDouble(),
+                                                  color: AppTheme.errorRed,
+                                                  width: 36,
+                                                  borderRadius: const BorderRadius.vertical(
+                                                      top: Radius.circular(8)),
+                                                ),
+                                              ]),
+                                            ],
+                                            titlesData: FlTitlesData(
+                                              bottomTitles: AxisTitles(
+                                                sideTitles: SideTitles(
+                                                  showTitles: true,
+                                                  getTitlesWidget: (val, _) {
+                                                    const labels = ['Disetujui', 'Pending', 'Ditolak'];
+                                                    return Padding(
+                                                      padding: const EdgeInsets.only(top: 6),
+                                                      child: Text(labels[val.toInt()],
+                                                          style: const TextStyle(
+                                                              fontSize: 10,
+                                                              color: AppTheme.greyText)),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                              leftTitles: AxisTitles(
+                                                sideTitles: SideTitles(
+                                                  showTitles: true,
+                                                  reservedSize: 24,
+                                                  getTitlesWidget: (val, _) => Text(
+                                                    '${val.toInt()}',
+                                                    style: const TextStyle(
+                                                        fontSize: 9,
+                                                        color: AppTheme.greyText),
+                                                  ),
+                                                ),
+                                              ),
+                                              topTitles: const AxisTitles(
+                                                  sideTitles: SideTitles(showTitles: false)),
+                                              rightTitles: const AxisTitles(
+                                                  sideTitles: SideTitles(showTitles: false)),
+                                            ),
+                                            gridData: const FlGridData(show: false),
+                                            borderData: FlBorderData(show: false),
+                                          ),
+                                        ),
+                                      ),
+                              ],
                             ),
                           ),
+
+                          const SizedBox(height: 80),
                         ],
                       ),
                     ),
-
-                    const SizedBox(height: 80),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -566,8 +485,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _statMini(
-      String label, String value, IconData icon, Color color) {
+  Widget _statMini(String label, String value, IconData icon, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -576,10 +494,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2)),
           ],
         ),
         child: Row(
@@ -597,22 +514,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: color,
-                    ),
-                  ),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                        fontSize: 9,
-                        color: AppTheme.greyText,
-                        height: 1.3),
-                    maxLines: 2,
-                  ),
+                  Text(value,
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: color)),
+                  Text(label,
+                      style: const TextStyle(
+                          fontSize: 9,
+                          color: AppTheme.greyText,
+                          height: 1.3),
+                      maxLines: 2),
                 ],
               ),
             ),
@@ -631,10 +543,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+              color: color.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -646,8 +557,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             children: [
               Icon(icon, color: Colors.white.withOpacity(0.9), size: 20),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(6),
@@ -663,30 +573,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 10,
-            ),
-          ),
+          Text(title,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700)),
+          Text(subtitle,
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.7), fontSize: 10)),
           const SizedBox(height: 8),
-          // Progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: Colors.white.withOpacity(0.2),
-              valueColor:
-              const AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 4,
             ),
           ),
