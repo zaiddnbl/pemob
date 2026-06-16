@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:screenshot/screenshot.dart';
@@ -62,28 +61,19 @@ class _BuktiPembayaranScreenState extends State<BuktiPembayaranScreen> {
       // Tentukan nama file yang akan muncul di galeri publik
       final fileName = 'bukti_${widget.pembayaran.noTransaksi}_${DateTime.now().millisecondsSinceEpoch}';
 
-      // SIMPAN LANGSUNG KE GALERI PUBLIK MENGGUNAKAN LIBRARY BARU
-      final result = await ImageGallerySaver.saveImage(
-        image,
-        quality: 100,
-        name: fileName,
-      );
+      // SIMPAN LANGSUNG KE GALERI PUBLIK MENGGUNAKAN LIBRARY GAL
+      await Gal.putImageBytes(image, name: fileName);
 
       if (!mounted) return;
       setState(() => _isSaving = false);
 
-      // Periksa apakah proses penyimpanan ke galeri sukses
-      if (result != null && result['isSuccess'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bukti pembayaran berhasil disimpan ke Galeri!'),
-            backgroundColor: AppTheme.accentGreen,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      } else {
-        throw Exception('Gagal mendaftarkan gambar ke dalam sistem galeri');
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bukti pembayaran berhasil disimpan ke Galeri!'),
+          backgroundColor: AppTheme.accentGreen,
+          duration: Duration(seconds: 3),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
