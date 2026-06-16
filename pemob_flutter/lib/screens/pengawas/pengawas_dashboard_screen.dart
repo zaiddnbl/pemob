@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/user_model.dart';
-import '../../services/firestore_service.dart';
+import '../../models/pembayaran_model.dart';
 import '../../theme/app_theme.dart';
 
 class PengawasDashboardScreen extends StatefulWidget {
@@ -13,369 +15,503 @@ class PengawasDashboardScreen extends StatefulWidget {
 }
 
 class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
-  int _totalPedagang = 0;
-  int _totalKiosAktif = 0;
-  double _totalRetribusiBulanIni = 0;
-  int _berhasil = 0, _pending = 0, _ditolak = 0;
-  bool _isLoading = true;
+  String _filter = 'semua';
+  String _searchQuery = '';
+  final TextEditingController _searchCtrl = TextEditingController();
+
+  static const Color _teal = Color(0xFF1A3C34);
+  static const Color _bg = Color(0xFFF5F7FA);
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _searchCtrl.addListener(() => setState(() => _searchQuery = _searchCtrl.text));
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    final results = await Future.wait([
-      FirestoreService.getTotalPedagang(),
-      FirestoreService.getTotalKiosAktif(),
-      FirestoreService.getStatistikBulanIni(),
-    ]);
-
-    if (mounted) {
-      final statistik = results[2] as Map<String, dynamic>;
-      setState(() {
-        _totalPedagang = results[0] as int;
-        _totalKiosAktif = results[1] as int;
-        _totalRetribusiBulanIni = statistik['totalMasuk'] as double;
-        _berhasil = statistik['berhasil'] as int;
-        _pending = statistik['pending'] as int;
-        _ditolak = statistik['ditolak'] as int;
-        _isLoading = false;
-      });
-    }
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
-  String _formatRupiah(double amount) {
-    if (amount >= 1000000) {
-      return 'Rp ${(amount / 1000000).toStringAsFixed(1)}Jt';
+  // ── Kalkulasi jatuh tempo akumulatif ─────────────────────────
+  DateTime? _hitungJatuhTempo(List<PembayaranModel> payments) {
+    if (payments.isEmpty) return null;
+    final berhasil = payments.where((p) => p.status == 'berhasil').toList();
+    if (berhasil.isEmpty) return null;
+    berhasil.sort((a, b) => a.tanggal.compareTo(b.tanggal));
+    DateTime? earliest;
+    try {
+      final parts = berhasil.first.tanggal.split(' ')[0].split('-');
+      earliest = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+    } catch (_) { return null; }
+    int totalHari = 0;
+    for (final p in berhasil) {
+      switch (p.jenisPajak.toLowerCase()) {
+        case 'harian':   totalHari += 1;  break;
+        case 'mingguan': totalHari += 7;  break;
+        case 'bulanan':  totalHari += 30; break;
+      }
     }
-    if (amount >= 1000) {
-      return 'Rp ${(amount / 1000).toStringAsFixed(0)}rb';
-    }
-    return 'Rp ${amount.toInt()}';
+    return earliest.add(Duration(days: totalHari));
+  }
+
+  String _formatRupiah(double v) {
+    if (v >= 1000000) return 'Rp ${(v / 1000000).toStringAsFixed(1)}Jt';
+    if (v >= 1000) return 'Rp ${(v / 1000).toStringAsFixed(0)}rb';
+    return 'Rp ${v.toInt()}';
+  }
+
+  String _sisaText(DateTime? dt) {
+    if (dt == null) return 'Belum bayar';
+    final sisa = dt.difference(DateTime.now()).inDays;
+    if (sisa < 0) return 'Nunggak ${-sisa} hari';
+    if (sisa == 0) return 'Jatuh tempo hari ini!';
+    return 'Sisa $sisa hari';
+  }
+
+  Color _sisaColor(DateTime? dt) {
+    if (dt == null) return const Color(0xFFD97706);
+    final sisa = dt.difference(DateTime.now()).inDays;
+    if (sisa < 0) return AppTheme.errorRed;
+    if (sisa <= 3) return const Color(0xFFD97706);
+    return AppTheme.primaryGreen;
   }
 
   @override
   Widget build(BuildContext context) {
     final user = SessionUser.currentUser;
-    final total = _berhasil + _pending + _ditolak;
+    final nama = user?.nama ?? 'User';
 
+    // ── 3 Stream sekaligus ────────────────────────────────────
     return Scaffold(
-      backgroundColor: AppTheme.bgColor,
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        color: AppTheme.primaryGreen,
-        child: CustomScrollView(
-          slivers: [
-            // ── Header — tombol edit & logout sudah dihapus ──
-            SliverAppBar(
-              pinned: true,
-              expandedHeight: 160,
-              automaticallyImplyLeading: false,
-              backgroundColor: AppTheme.primaryGreen,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 80, 20, 20),
+      backgroundColor: _bg,
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .where('role', isEqualTo: 'pedagang')
+            .snapshots(),
+        builder: (context, snapUsers) {
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('kios')
+                .where('status', isEqualTo: 'aktif')
+                .snapshots(),
+            builder: (context, snapKios) {
+              return StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('pembayaran')
+                    .snapshots(),
+                builder: (context, snapPembayaran) {
+
+                  // Loading
+                  if (snapUsers.connectionState == ConnectionState.waiting ||
+                      snapPembayaran.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator(color: _teal));
+                  }
+
+                  // Data
+                  final totalPedagang = snapUsers.data?.docs.length ?? 0;
+                  final totalKiosAktif = snapKios.data?.docs.length ?? 0;
+
+                  final semuaPembayaran = (snapPembayaran.data?.docs ?? [])
+                      .map((d) => PembayaranModel.fromFirestore(d))
+                      .toList();
+
+                  // Total retribusi bulan ini
+                  final now = DateTime.now();
+                  final startOfMonth = DateTime(now.year, now.month, 1);
+                  double totalRetribusi = 0;
+                  for (final p in semuaPembayaran) {
+                    if (p.status != 'berhasil') continue;
+                    try {
+                      final parts = p.tanggal.split(' ')[0].split('-');
+                      final tgl = DateTime(int.parse(parts[0]),
+                          int.parse(parts[1]), int.parse(parts[2]));
+                      if (!tgl.isBefore(startOfMonth)) totalRetribusi += p.jumlah;
+                    } catch (_) {}
+                  }
+
+                  // Build list pedagang dengan jatuh tempo
+                  final pedagangDocs = snapUsers.data?.docs ?? [];
+                  final pedagangList = pedagangDocs.map((doc) {
+                    final u = UserModel.fromFirestore(doc);
+                    final pays = semuaPembayaran
+                        .where((p) => p.noKios == u.noKios).toList();
+                    return _PedagangItem(
+                        user: u, jatuhTempo: _hitungJatuhTempo(pays));
+                  }).toList();
+
+                  // Apply filter + search
+                  List<_PedagangItem> filtered = pedagangList;
+                  if (_searchQuery.isNotEmpty) {
+                    filtered = filtered.where((p) =>
+                    p.user.nama.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                        p.user.noKios.toLowerCase().contains(_searchQuery.toLowerCase()))
+                        .toList();
+                  }
+                  switch (_filter) {
+                    case 'belum':
+                      filtered = filtered.where((p) =>
+                      p.jatuhTempo != null &&
+                          p.jatuhTempo!.isAfter(DateTime.now())).toList();
+                      break;
+                    case 'jatuh':
+                      filtered = filtered.where((p) =>
+                      p.jatuhTempo == null ||
+                          p.jatuhTempo!.isBefore(DateTime.now())).toList();
+                      break;
+                  }
+
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Dashboard Pengawas',
-                          style: TextStyle(
-                            color: AppTheme.accentYellow,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        Text(
-                          'Halo, ${user?.nama.split(' ').first ?? 'Pengawas'} 👋',
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: _isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Center(
-                          child: CircularProgressIndicator(
-                              color: AppTheme.primaryGreen)),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // ── Stat Cards ──────────────────
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: _statCard(
-                                icon: Icons.people_rounded,
-                                label: 'Total Pedagang',
-                                value: '$_totalPedagang',
-                                color: const Color(0xFF1565C0),
-                              )),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                  child: _statCard(
-                                icon: Icons.storefront_rounded,
-                                label: 'Kios Aktif',
-                                value: '$_totalKiosAktif',
-                                color: AppTheme.primaryGreen,
-                              )),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                  child: _statCard(
-                                icon: Icons.payments_rounded,
-                                label: 'Retribusi Bulan Ini',
-                                value: _formatRupiah(_totalRetribusiBulanIni),
-                                color: const Color(0xFF6A1B9A),
-                              )),
-                            ],
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // ── Chart Kepatuhan ─────────────
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2)),
-                              ],
+                        // ── HEADER foto pasar ──────────────────
+                        SizedBox(
+                          width: double.infinity,
+                          height: 210,
+                          child: Stack(children: [
+                            Positioned.fill(
+                              child: Image.asset('assets/images/foto_pasar.jpg',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      Container(color: _teal)),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Kepatuhan Pembayaran',
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppTheme.darkText),
+                            Positioned.fill(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.black.withOpacity(0.1),
+                                      Colors.black.withOpacity(0.72),
+                                    ],
+                                  ),
                                 ),
-                                const Text(
-                                  'Bulan ini',
-                                  style: TextStyle(
-                                      fontSize: 12, color: AppTheme.greyText),
-                                ),
-                                const SizedBox(height: 20),
-                                total == 0
-                                    ? const Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.all(20),
-                                          child: Text(
-                                            'Belum ada data pembayaran',
-                                            style: TextStyle(
-                                                color: AppTheme.greyText),
-                                          ),
-                                        ),
-                                      )
-                                    : SizedBox(
-                                        height: 200,
-                                        child: PieChart(
-                                          PieChartData(
-                                            sections: [
-                                              if (_berhasil > 0)
-                                                PieChartSectionData(
-                                                  value: _berhasil.toDouble(),
-                                                  color: AppTheme.primaryGreen,
-                                                  title:
-                                                      '$_berhasil\nBerhasil',
-                                                  titleStyle: const TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: Colors.white),
-                                                  radius: 80,
-                                                ),
-                                              if (_pending > 0)
-                                                PieChartSectionData(
-                                                  value: _pending.toDouble(),
-                                                  color:
-                                                      const Color(0xFFE65100),
-                                                  title: '$_pending\nPending',
-                                                  titleStyle: const TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: Colors.white),
-                                                  radius: 80,
-                                                ),
-                                              if (_ditolak > 0)
-                                                PieChartSectionData(
-                                                  value: _ditolak.toDouble(),
-                                                  color: AppTheme.errorRed,
-                                                  title: '$_ditolak\nDitolak',
-                                                  titleStyle: const TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: Colors.white),
-                                                  radius: 80,
-                                                ),
-                                            ],
-                                            centerSpaceRadius: 40,
-                                            sectionsSpace: 2,
-                                          ),
-                                        ),
-                                      ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                              ),
+                            ),
+                            SafeArea(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    _legend(AppTheme.primaryGreen, 'Berhasil'),
-                                    const SizedBox(width: 16),
-                                    _legend(
-                                        const Color(0xFFE65100), 'Pending'),
-                                    const SizedBox(width: 16),
-                                    _legend(AppTheme.errorRed, 'Ditolak'),
+                                    Row(children: [
+                                      Image.asset('assets/images/logo_biru.png',
+                                          height: 26,
+                                          errorBuilder: (_, __, ___) =>
+                                          const Icon(Icons.storefront_rounded,
+                                              color: Colors.white, size: 26)),
+                                      const SizedBox(width: 8),
+                                      const Text('SIPESEL',
+                                          style: TextStyle(fontSize: 15,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.white, letterSpacing: 1.5,
+                                              shadows: [Shadow(color: Colors.black45, blurRadius: 4)])),
+                                    ]),
+                                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                      Text('HALO $nama 👋',
+                                          style: const TextStyle(fontSize: 26,
+                                              fontWeight: FontWeight.w900, color: Colors.white,
+                                              shadows: [Shadow(color: Colors.black54, blurRadius: 6)])),
+                                      const SizedBox(height: 4),
+                                      const Text('Dashboard Pengawas • Pasar Wadungasri',
+                                          style: TextStyle(fontSize: 12, color: Colors.white70,
+                                              shadows: [Shadow(color: Colors.black45, blurRadius: 4)])),
+                                    ]),
                                   ],
                                 ),
-                              ],
+                              ),
+                            ),
+                          ]),
+                        ),
+
+                        // ── STAT CARDS ─────────────────────────
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                          child: Row(children: [
+                            _statCard('Total\nPedagang', '$totalPedagang',
+                                Icons.people_rounded, _teal),
+                            const SizedBox(width: 10),
+                            _statCard('Total Kios\nAktif', '$totalKiosAktif',
+                                Icons.storefront_rounded, const Color(0xFF1565C0)),
+                            const SizedBox(width: 10),
+                            _statCard('Total\nRetribusi', _formatRupiah(totalRetribusi),
+                                Icons.payments_rounded, const Color(0xFF6A1B9A)),
+                          ]),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ── DAFTAR PEDAGANG ────────────────────
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: const Text('daftar pedagang',
+                              style: TextStyle(fontSize: 18,
+                                  fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // Search bar
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: TextField(
+                            controller: _searchCtrl,
+                            decoration: InputDecoration(
+                              hintText: 'Cari nama pedagang...',
+                              hintStyle: const TextStyle(fontSize: 13, color: AppTheme.greyText),
+                              prefixIcon: const Icon(Icons.search_rounded,
+                                  color: AppTheme.greyText, size: 20),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded,
+                                      size: 18, color: AppTheme.greyText),
+                                  onPressed: () => _searchCtrl.clear())
+                                  : null,
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade200)),
+                              enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade200)),
+                              focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: _teal, width: 1.5)),
+                              filled: true, fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 10),
                             ),
                           ),
+                        ),
 
-                          const SizedBox(height: 16),
+                        const SizedBox(height: 10),
 
-                          // ── Summary bottom ──────────────
-                          Row(
+                        // Filter chips
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(children: [
+                            _filterChip('semua', 'semua'),
+                            const SizedBox(width: 8),
+                            _filterChip('belum', 'belum jatuh tempo'),
+                            const SizedBox(width: 8),
+                            _filterChip('jatuh', 'Jatuh tempo'),
+                          ]),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // Carousel pedagang
+                        filtered.isEmpty
+                            ? SizedBox(
+                          height: 160,
+                          child: Center(child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Expanded(
-                                child: _summaryCard(
-                                  label: 'Total Berhasil',
-                                  value: '$_berhasil transaksi',
-                                  color: AppTheme.primaryGreen,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _summaryCard(
-                                  label: 'Total Pembayaran',
-                                  value: '$total transaksi',
-                                  color: const Color(0xFF1565C0),
-                                ),
+                              Icon(Icons.people_outline_rounded,
+                                  color: Colors.grey.shade300, size: 44),
+                              const SizedBox(height: 8),
+                              Text(
+                                _searchQuery.isNotEmpty
+                                    ? '"$_searchQuery" tidak ditemukan'
+                                    : 'Tidak ada pedagang',
+                                style: const TextStyle(
+                                    color: AppTheme.greyText, fontSize: 13),
+                                textAlign: TextAlign.center,
                               ),
                             ],
+                          )),
+                        )
+                            : SizedBox(
+                          height: 240,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.only(
+                                left: 16, right: 16, bottom: 8),
+                            itemCount: filtered.length,
+                            itemBuilder: (context, i) {
+                              final item = filtered[i];
+                              final sisaColor = _sisaColor(item.jatuhTempo);
+                              final sisa = _sisaText(item.jatuhTempo);
+                              final initial = item.user.nama.isNotEmpty
+                                  ? item.user.nama[0].toUpperCase() : 'P';
+
+                              return Container(
+                                width: 150,
+                                margin: EdgeInsets.only(
+                                    right: i == filtered.length - 1 ? 0 : 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.grey.shade100),
+                                  boxShadow: [BoxShadow(
+                                      color: Colors.black.withOpacity(0.06),
+                                      blurRadius: 10, offset: const Offset(0, 4))],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(20)),
+                                      child: _PhotoWidget(
+                                          uid: item.user.uid,
+                                          initial: initial,
+                                          width: 150, height: 115),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(10),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(item.user.nama,
+                                              style: const TextStyle(fontSize: 12,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: Color(0xFF1A1A1A)),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis),
+                                          const SizedBox(height: 2),
+                                          Text('Kios ${item.user.noKios}',
+                                              style: const TextStyle(
+                                                  fontSize: 10, color: AppTheme.greyText)),
+                                          const SizedBox(height: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 3),
+                                            decoration: BoxDecoration(
+                                                color: sisaColor.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(20),
+                                                border: Border.all(
+                                                    color: sisaColor.withOpacity(0.3))),
+                                            child: Text(sisa,
+                                                style: TextStyle(fontSize: 9,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: sisaColor),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                        ],
-                      ),
+                        ),
+
+                        const SizedBox(height: 80),
+                      ],
                     ),
-            ),
-          ],
-        ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
 
-  Widget _statCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 10),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: AppTheme.darkText)),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 10, color: AppTheme.greyText, height: 1.3)),
-        ],
+  Widget _statCard(String label, String value, IconData icon, Color color) =>
+      Expanded(child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+            color: Colors.white, borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.grey.shade100),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04),
+                blurRadius: 8, offset: const Offset(0, 2))]),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon, color: color, size: 16)),
+          const SizedBox(height: 8),
+          Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: color),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(label, style: const TextStyle(fontSize: 9, color: AppTheme.greyText, height: 1.3)),
+        ]),
+      ));
+
+  Widget _filterChip(String key, String label) {
+    final isActive = _filter == key;
+    return GestureDetector(
+      onTap: () => setState(() => _filter = key),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+            color: isActive ? _teal : Colors.white,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: isActive ? _teal : Colors.grey.shade200),
+            boxShadow: isActive ? [BoxShadow(
+                color: _teal.withOpacity(0.2), blurRadius: 6,
+                offset: const Offset(0, 2))] : []),
+        child: Text(label, style: TextStyle(fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: isActive ? Colors.white : AppTheme.greyText)),
       ),
     );
+  }
+}
+
+// ── Widget foto profil pedagang ──────────────────────────────────
+class _PhotoWidget extends StatefulWidget {
+  final String uid, initial;
+  final double width, height;
+  const _PhotoWidget({required this.uid, required this.initial,
+    required this.width, required this.height});
+  @override
+  State<_PhotoWidget> createState() => _PhotoWidgetState();
+}
+
+class _PhotoWidgetState extends State<_PhotoWidget> {
+  File? _photo;
+  bool _loaded = false;
+  static const Color _teal = Color(0xFF1A3C34);
+
+  @override
+  void initState() { super.initState(); _load(); }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final path = prefs.getString('profile_photo_${widget.uid}');
+      if (path != null) {
+        final f = File(path);
+        if (await f.exists() && mounted) setState(() => _photo = f);
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loaded = true);
   }
 
-  Widget _summaryCard({
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11,
-                  color: color,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: color)),
-        ],
-      ),
-    );
+  @override
+  Widget build(BuildContext context) {
+    if (!_loaded) {
+      return Container(width: widget.width, height: widget.height,
+          color: _teal.withOpacity(0.06),
+          child: const Center(child: SizedBox(width: 20, height: 20,
+              child: CircularProgressIndicator(color: _teal, strokeWidth: 2))));
+    }
+    if (_photo != null) {
+      return Image.file(_photo!, width: widget.width, height: widget.height,
+          fit: BoxFit.cover);
+    }
+    return Container(width: widget.width, height: widget.height,
+        color: _teal.withOpacity(0.08),
+        child: Center(child: CircleAvatar(radius: 28, backgroundColor: _teal,
+            child: Text(widget.initial, style: const TextStyle(
+                fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)))));
   }
+}
 
-  Widget _legend(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-                color: color, borderRadius: BorderRadius.circular(3))),
-        const SizedBox(width: 5),
-        Text(label,
-            style: const TextStyle(fontSize: 11, color: AppTheme.greyText)),
-      ],
-    );
-  }
+class _PedagangItem {
+  final UserModel user;
+  final DateTime? jatuhTempo;
+  _PedagangItem({required this.user, this.jatuhTempo});
 }

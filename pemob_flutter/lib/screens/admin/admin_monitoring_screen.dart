@@ -141,9 +141,9 @@ class _MonitoringPedagangTabState extends State<_MonitoringPedagangTab> {
       final result = <_PedagangData>[];
       for (final p in pedagang) {
         final pembayaranPedagang =
-            semuaPembayaran.where((trx) => trx.noKios == p.noKios).toList();
+        semuaPembayaran.where((trx) => trx.noKios == p.noKios).toList();
         final lastPembayaran =
-            pembayaranPedagang.isNotEmpty ? pembayaranPedagang.first : null;
+        pembayaranPedagang.isNotEmpty ? pembayaranPedagang.first : null;
         final jatuhTempo = (p.noKios != '-' && p.noKios.isNotEmpty)
             ? jatuhTempoMap[p.noKios]
             : null;
@@ -451,7 +451,7 @@ class _MonitoringPedagangTabState extends State<_MonitoringPedagangTab> {
                 decoration: InputDecoration(
                   hintText: 'Cari nama pedagang / no kios...',
                   hintStyle:
-                      const TextStyle(fontSize: 13, color: AppTheme.greyText),
+                  const TextStyle(fontSize: 13, color: AppTheme.greyText),
                   prefixIcon: const Icon(Icons.search_rounded,
                       color: AppTheme.greyText, size: 20),
                   border: OutlineInputBorder(
@@ -473,9 +473,9 @@ class _MonitoringPedagangTabState extends State<_MonitoringPedagangTab> {
                     valueListenable: _searchCtrl,
                     builder: (_, val, __) => val.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () => _searchCtrl.clear(),
-                          )
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => _searchCtrl.clear(),
+                    )
                         : const SizedBox.shrink(),
                   ),
                 ),
@@ -521,220 +521,220 @@ class _MonitoringPedagangTabState extends State<_MonitoringPedagangTab> {
           child: _isLoading
               ? const Center(child: CircularProgressIndicator(color: _navyDark))
               : _filtered.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                    color: Colors.black.withOpacity(0.06),
-                                    blurRadius: 10)
-                              ],
-                            ),
-                            child: const Icon(Icons.people_outline_rounded,
-                                size: 40, color: AppTheme.greyText),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text('Tidak ada data pedagang',
-                              style: TextStyle(color: AppTheme.greyText)),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _filtered.length,
-                      itemBuilder: (context, index) {
-                        final item = _filtered[index];
-                        final sudahBayar = item.sudahBayar;
-                        final jtColor = _jatuhTempoColor(item.jatuhTempo);
-                        final isNunggak = item.jatuhTempo != null &&
-                            item.jatuhTempo!.isBefore(DateTime.now());
+              ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 10)
+                    ],
+                  ),
+                  child: const Icon(Icons.people_outline_rounded,
+                      size: 40, color: AppTheme.greyText),
+                ),
+                const SizedBox(height: 16),
+                const Text('Tidak ada data pedagang',
+                    style: TextStyle(color: AppTheme.greyText)),
+              ],
+            ),
+          )
+              : ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _filtered.length,
+            itemBuilder: (context, index) {
+              final item = _filtered[index];
+              final sudahBayar = item.sudahBayar;
+              final jtColor = _jatuhTempoColor(item.jatuhTempo);
+              final isNunggak = item.jatuhTempo != null &&
+                  item.jatuhTempo!.isBefore(DateTime.now());
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: isNunggak
-                                ? Border.all(
-                                    color: AppTheme.errorRed.withOpacity(0.4),
-                                    width: 1.5)
-                                : null,
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2)),
-                            ],
-                          ),
-                          child: Column(
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: isNunggak
+                      ? Border.all(
+                      color: AppTheme.errorRed.withOpacity(0.4),
+                      width: 1.5)
+                      : null,
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2)),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: sudahBayar
+                            ? AppTheme.primaryGreen
+                            : AppTheme.errorRed,
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(16)),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        children: [
+                          Row(
                             children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: sudahBayar
+                                    ? AppTheme.primaryGreen
+                                    .withOpacity(0.15)
+                                    : AppTheme.errorRed
+                                    .withOpacity(0.1),
+                                child: Text(
+                                  item.user.nama.isNotEmpty
+                                      ? item.user.nama[0]
+                                      .toUpperCase()
+                                      : 'P',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: sudahBayar
+                                          ? AppTheme.primaryGreen
+                                          : AppTheme.errorRed),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    Text(item.user.nama,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight:
+                                            FontWeight.w700,
+                                            color: _navyDark)),
+                                    Text('Kios ${item.user.noKios}',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color:
+                                            AppTheme.greyText)),
+                                  ],
+                                ),
+                              ),
                               Container(
-                                height: 3,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: sudahBayar
                                       ? AppTheme.primaryGreen
-                                      : AppTheme.errorRed,
-                                  borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(16)),
+                                      .withOpacity(0.1)
+                                      : AppTheme.errorRed
+                                      .withOpacity(0.1),
+                                  borderRadius:
+                                  BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  sudahBayar
+                                      ? 'Sudah Bayar'
+                                      : 'Belum Bayar',
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: sudahBayar
+                                          ? AppTheme.primaryGreen
+                                          : AppTheme.errorRed),
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.all(14),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          const Divider(height: 1),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
                                 child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 20,
-                                          backgroundColor: sudahBayar
-                                              ? AppTheme.primaryGreen
-                                                  .withOpacity(0.15)
-                                              : AppTheme.errorRed
-                                                  .withOpacity(0.1),
-                                          child: Text(
-                                            item.user.nama.isNotEmpty
-                                                ? item.user.nama[0]
-                                                    .toUpperCase()
-                                                : 'P',
-                                            style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w800,
-                                                color: sudahBayar
-                                                    ? AppTheme.primaryGreen
-                                                    : AppTheme.errorRed),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(item.user.nama,
-                                                  style: const TextStyle(
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: _navyDark)),
-                                              Text('Kios ${item.user.noKios}',
-                                                  style: const TextStyle(
-                                                      fontSize: 11,
-                                                      color:
-                                                          AppTheme.greyText)),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: sudahBayar
-                                                ? AppTheme.primaryGreen
-                                                    .withOpacity(0.1)
-                                                : AppTheme.errorRed
-                                                    .withOpacity(0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            sudahBayar
-                                                ? 'Sudah Bayar'
-                                                : 'Belum Bayar',
-                                            style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w700,
-                                                color: sudahBayar
-                                                    ? AppTheme.primaryGreen
-                                                    : AppTheme.errorRed),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    const Divider(height: 1),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const Text('Pembayaran',
-                                                  style: TextStyle(
-                                                      fontSize: 10,
-                                                      color:
-                                                          AppTheme.greyText)),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                item.lastPembayaran != null
-                                                    ? '${item.lastPembayaran!.jenisPajakLabel}\n${_formatRupiah(item.lastPembayaran!.jumlah)}'
-                                                    : '-',
-                                                style: const TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: _navyDark,
-                                                    height: 1.4),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const Text('Jatuh Tempo',
-                                                  style: TextStyle(
-                                                      fontSize: 10,
-                                                      color:
-                                                          AppTheme.greyText)),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                _formatJatuhTempo(
-                                                    item.jatuhTempo),
-                                                style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: jtColor,
-                                                    height: 1.4),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () => _showNotifDialog(item),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(10),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  _navyDark.withOpacity(0.08),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            child: const Icon(
-                                              Icons.send_rounded,
-                                              color: _navyDark,
-                                              size: 18,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    const Text('Pembayaran',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color:
+                                            AppTheme.greyText)),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      item.lastPembayaran != null
+                                          ? '${item.lastPembayaran!.jenisPajakLabel}\n${_formatRupiah(item.lastPembayaran!.jumlah)}'
+                                          : '-',
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: _navyDark,
+                                          height: 1.4),
                                     ),
                                   ],
                                 ),
                               ),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Jatuh Tempo',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color:
+                                            AppTheme.greyText)),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _formatJatuhTempo(
+                                          item.jatuhTempo),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: jtColor,
+                                          height: 1.4),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => _showNotifDialog(item),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color:
+                                    _navyDark.withOpacity(0.08),
+                                    borderRadius:
+                                    BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.send_rounded,
+                                    color: _navyDark,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -854,12 +854,12 @@ class _VerifikasiTab extends StatelessWidget {
                   content: Text(
                       success ? 'Pembayaran disetujui ✅' : 'Gagal menyetujui'),
                   backgroundColor:
-                      success ? AppTheme.accentGreen : AppTheme.errorRed,
+                  success ? AppTheme.accentGreen : AppTheme.errorRed,
                 ),
               );
             },
             icon:
-                const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+            const Icon(Icons.check_rounded, size: 16, color: Colors.white),
             label: const Text('Setujui', style: TextStyle(color: Colors.white)),
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryGreen,
@@ -884,7 +884,7 @@ class _VerifikasiTab extends StatelessWidget {
         builder: (ctx, setModal) => Padding(
           // ✅ FIX sama: pakai viewInsets dari ctx
           padding:
-              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
             decoration: const BoxDecoration(
               color: Colors.white,
@@ -973,16 +973,16 @@ class _VerifikasiTab extends StatelessWidget {
                       color: const Color(0xFFF4F6F5),
                       borderRadius: BorderRadius.circular(12),
                       border:
-                          Border.all(color: Colors.red.shade200, width: 1.5),
+                      Border.all(color: Colors.red.shade200, width: 1.5),
                     ),
                     child: TextField(
                       controller: alasanCtrl,
                       maxLines: 3,
                       decoration: const InputDecoration(
                         hintText:
-                            'Contoh: Bukti pembayaran tidak valid, nominal tidak sesuai...',
+                        'Contoh: Bukti pembayaran tidak valid, nominal tidak sesuai...',
                         hintStyle:
-                            TextStyle(fontSize: 12, color: AppTheme.greyText),
+                        TextStyle(fontSize: 12, color: AppTheme.greyText),
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.all(14),
                       ),
@@ -995,51 +995,51 @@ class _VerifikasiTab extends StatelessWidget {
                       onPressed: isSending
                           ? null
                           : () async {
-                              if (alasanCtrl.text.trim().isEmpty) {
-                                ScaffoldMessenger.of(ctx).showSnackBar(
-                                  const SnackBar(
-                                    content:
-                                        Text('Alasan penolakan wajib diisi'),
-                                    backgroundColor: AppTheme.errorRed,
-                                  ),
-                                );
-                                return;
-                              }
-                              setModal(() => isSending = true);
-                              final alasan = alasanCtrl.text.trim();
-                              final success =
-                                  await FirestoreService.rejectPembayaran(
-                                id: p.id,
-                                alasan: alasan,
-                              );
-                              if (success) {
-                                await FirestoreService.buatNotifikasiPenolakan(
-                                  noKios: p.noKios,
-                                  noTransaksi: p.noTransaksi,
-                                  alasan: alasan,
-                                );
-                              }
-                              if (!ctx.mounted) return;
-                              Navigator.pop(ctx);
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(success
-                                      ? 'Pembayaran ditolak & notifikasi dikirim'
-                                      : 'Gagal menolak pembayaran'),
-                                  backgroundColor:
-                                      success ? Colors.red : AppTheme.errorRed,
-                                ),
-                              );
-                            },
+                        if (alasanCtrl.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(
+                              content:
+                              Text('Alasan penolakan wajib diisi'),
+                              backgroundColor: AppTheme.errorRed,
+                            ),
+                          );
+                          return;
+                        }
+                        setModal(() => isSending = true);
+                        final alasan = alasanCtrl.text.trim();
+                        final success =
+                        await FirestoreService.rejectPembayaran(
+                          id: p.id,
+                          alasan: alasan,
+                        );
+                        if (success) {
+                          await FirestoreService.buatNotifikasiPenolakan(
+                            noKios: p.noKios,
+                            noTransaksi: p.noTransaksi,
+                            alasan: alasan,
+                          );
+                        }
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(success
+                                ? 'Pembayaran ditolak & notifikasi dikirim'
+                                : 'Gagal menolak pembayaran'),
+                            backgroundColor:
+                            success ? Colors.red : AppTheme.errorRed,
+                          ),
+                        );
+                      },
                       icon: isSending
                           ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.close_rounded,
-                              size: 16, color: Colors.white),
+                          size: 16, color: Colors.white),
                       label: Text(
                           isSending
                               ? 'Mengirim...'
@@ -1135,7 +1135,7 @@ class _VerifikasiTab extends StatelessWidget {
                 children: [
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFFD97706).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -1182,7 +1182,7 @@ class _VerifikasiTab extends StatelessWidget {
                           decoration: const BoxDecoration(
                             color: _navyDark,
                             borderRadius:
-                                BorderRadius.vertical(top: Radius.circular(20)),
+                            BorderRadius.vertical(top: Radius.circular(20)),
                           ),
                           child: Row(
                             children: [
@@ -1215,7 +1215,7 @@ class _VerifikasiTab extends StatelessWidget {
                                     Text('Kios ${p.noKios} • ${p.metodeBayar}',
                                         style: TextStyle(
                                             color:
-                                                Colors.white.withOpacity(0.7),
+                                            Colors.white.withOpacity(0.7),
                                             fontSize: 11)),
                                   ],
                                 ),
@@ -1225,7 +1225,7 @@ class _VerifikasiTab extends StatelessWidget {
                                     horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
                                   color:
-                                      const Color(0xFFD97706).withOpacity(0.25),
+                                  const Color(0xFFD97706).withOpacity(0.25),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Text('Pending',
@@ -1251,7 +1251,7 @@ class _VerifikasiTab extends StatelessWidget {
                               const Divider(height: 16),
                               Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text('Total Pembayaran',
                                       style: TextStyle(
@@ -1280,12 +1280,12 @@ class _VerifikasiTab extends StatelessWidget {
                                               fontWeight: FontWeight.w800)),
                                       style: OutlinedButton.styleFrom(
                                         side:
-                                            const BorderSide(color: Colors.red),
+                                        const BorderSide(color: Colors.red),
                                         padding: const EdgeInsets.symmetric(
                                             vertical: 12),
                                         shape: RoundedRectangleBorder(
                                             borderRadius:
-                                                BorderRadius.circular(12)),
+                                            BorderRadius.circular(12)),
                                       ),
                                     ),
                                   ),
@@ -1306,7 +1306,7 @@ class _VerifikasiTab extends StatelessWidget {
                                             vertical: 12),
                                         shape: RoundedRectangleBorder(
                                             borderRadius:
-                                                BorderRadius.circular(12)),
+                                            BorderRadius.circular(12)),
                                       ),
                                     ),
                                   ),

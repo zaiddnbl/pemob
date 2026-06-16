@@ -531,61 +531,71 @@ class _UserList extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (_) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+        // ✅ Fix overflow: tambah maxHeight + SingleChildScrollView
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        padding: EdgeInsets.only(
+          left: 24, right: 24, top: 24,
+          bottom: MediaQuery.of(context).padding.bottom + 24,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: _navyDark,
-              child: Text(
-                user.nama.isNotEmpty ? user.nama[0].toUpperCase() : 'U',
-                style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white),
+              const SizedBox(height: 20),
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: _navyDark,
+                child: Text(
+                  user.nama.isNotEmpty ? user.nama[0].toUpperCase() : 'U',
+                  style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(user.nama,
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: _navyDark)),
-            Text('@${user.username}',
-                style: const TextStyle(
-                    fontSize: 12, color: AppTheme.greyText)),
-            const SizedBox(height: 20),
-            _detailRow('Email', user.email),
-            _detailRow('No. HP',
-                user.nomorHp.isNotEmpty ? user.nomorHp : '-'),
-            _detailRow('Gender',
-                user.gender.isNotEmpty ? user.gender : '-'),
-            _detailRow('Role', user.role.toUpperCase()),
-            if (user.role == 'pedagang')
-              _detailRow('No. Kios', user.noKios),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Tutup'),
+              const SizedBox(height: 12),
+              Text(user.nama,
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: _navyDark)),
+              Text('@${user.username}',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.greyText)),
+              const SizedBox(height: 20),
+              _detailRow('Email', user.email),
+              _detailRow('No. HP',
+                  user.nomorHp.isNotEmpty ? user.nomorHp : '-'),
+              _detailRow('Gender',
+                  user.gender.isNotEmpty ? user.gender : '-'),
+              _detailRow('Role', user.role.toUpperCase()),
+              if (user.role == 'pedagang')
+                _detailRow('No. Kios', user.noKios),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Tutup'),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -668,14 +678,17 @@ class _UserList extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
+                    final newNoKios = user.role == 'pedagang'
+                        ? kiosCtrl.text.trim()
+                        : user.noKios;
                     await FirestoreService.updateUser(
                       uid: user.uid,
                       nama: namaCtrl.text.trim(),
                       email: emailCtrl.text.trim(),
                       nomorHp: hpCtrl.text.trim(),
-                      noKios: user.role == 'pedagang'
-                          ? kiosCtrl.text.trim()
-                          : user.noKios,
+                      noKios: newNoKios,
+                      // ✅ kirim oldNoKios agar kios lama dikosongkan
+                      oldNoKios: user.role == 'pedagang' ? user.noKios : null,
                     );
                     if (!ctx.mounted) return;
                     Navigator.pop(ctx);

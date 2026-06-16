@@ -1,10 +1,8 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import 'package:gal/gal.dart';
 import '../models/pembayaran_model.dart';
 import '../theme/app_theme.dart';
 
@@ -52,30 +50,40 @@ class _BuktiPembayaranScreenState extends State<BuktiPembayaranScreen> {
   Future<void> _simpanBukti() async {
     setState(() => _isSaving = true);
     try {
+      // Tangkap gambar dari widget Screenshot
       final Uint8List? image = await _screenshotController.capture(
         pixelRatio: 3.0,
       );
 
       if (image == null) {
-        throw Exception('Gagal capture');
+        throw Exception('Gagal mengambil tangkapan layar');
       }
 
-      final directory = await getApplicationDocumentsDirectory();
-      final fileName =
-          'bukti_${widget.pembayaran.noTransaksi}_${DateTime.now().millisecondsSinceEpoch}.png';
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsBytes(image);
+      // Tentukan nama file yang akan muncul di galeri publik
+      final fileName = 'bukti_${widget.pembayaran.noTransaksi}_${DateTime.now().millisecondsSinceEpoch}';
+
+      // SIMPAN LANGSUNG KE GALERI PUBLIK MENGGUNAKAN LIBRARY BARU
+      final result = await ImageGallerySaver.saveImage(
+        image,
+        quality: 100,
+        name: fileName,
+      );
 
       if (!mounted) return;
       setState(() => _isSaving = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Bukti disimpan: ${file.path}'),
-          backgroundColor: AppTheme.accentGreen,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      // Periksa apakah proses penyimpanan ke galeri sukses
+      if (result != null && result['isSuccess'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bukti pembayaran berhasil disimpan ke Galeri!'),
+            backgroundColor: AppTheme.accentGreen,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        throw Exception('Gagal mendaftarkan gambar ke dalam sistem galeri');
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -172,32 +180,54 @@ class _BuktiPembayaranScreenState extends State<BuktiPembayaranScreen> {
                                 color: Colors.white70, fontSize: 11),
                           ),
                           const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE65100).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: const Color(0xFFE65100), width: 1),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.pending_rounded,
-                                    color: Color(0xFFFFB74D), size: 16),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Menunggu Verifikasi',
-                                  style: TextStyle(
-                                    color: Color(0xFFFFB74D),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
+                          // Status badge dinamis
+                          Builder(builder: (_) {
+                            IconData statusIcon;
+                            Color statusColor;
+                            String statusText;
+                            switch (p.status) {
+                              case 'berhasil':
+                                statusIcon = Icons.check_circle_rounded;
+                                statusColor = AppTheme.primaryGreen;
+                                statusText = 'Pembayaran Berhasil';
+                                break;
+                              case 'ditolak':
+                                statusIcon = Icons.cancel_rounded;
+                                statusColor = AppTheme.errorRed;
+                                statusText = 'Pembayaran Ditolak';
+                                break;
+                              default:
+                                statusIcon = Icons.pending_rounded;
+                                statusColor = const Color(0xFFE65100);
+                                statusText = 'Menunggu Verifikasi';
+                            }
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: statusColor, width: 1),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(statusIcon,
+                                      color: statusColor, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    statusText,
+                                    style: TextStyle(
+                                      color: statusColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
+                                ],
+                              ),
+                            );
+                          }),
                         ],
                       ),
                     ),
@@ -274,45 +304,6 @@ class _BuktiPembayaranScreenState extends State<BuktiPembayaranScreen> {
                                 ),
                               ),
                             ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // QR Code
-                          Center(
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'QR Bukti Transaksi',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: AppTheme.greyText),
-                                ),
-                                const SizedBox(height: 10),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                        color: Colors.grey.shade200,
-                                        width: 1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: QrImageView(
-                                    data: '${p.noTransaksi}|${p.noKios}|${p.jenisPajak}|${p.jumlah}|${p.tanggal}',
-                                    version: QrVersions.auto,
-                                    size: 140,
-                                    backgroundColor: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Scan untuk verifikasi transaksi',
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      color: AppTheme.greyText),
-                                ),
-                              ],
-                            ),
                           ),
 
                           const SizedBox(height: 20),

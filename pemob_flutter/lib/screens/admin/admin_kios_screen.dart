@@ -156,6 +156,8 @@ class _AdminKiosScreenState extends State<AdminKiosScreen> {
                         zona: zonaCtrl.text.trim(),
                         lokasiKios: lokasiCtrl.text.trim(),
                         ukuranKios: ukuranCtrl.text.trim(),
+                        // ✅ Pertahankan tanggalMasuk — jangan reset
+                        tanggalMasuk: kios?.tanggalMasuk,
                       );
                       if (kios == null) {
                         await FirestoreService.tambahKios(newKios);

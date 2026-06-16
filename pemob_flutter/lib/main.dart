@@ -20,7 +20,23 @@ class SipeselApp extends StatelessWidget {
     return MaterialApp(
       title: 'SIPESEL',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.lightTheme.copyWith(
+        // ✅ SnackBar muncul dari atas
+        snackBarTheme: const SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+        ),
+        // ✅ Dialog logout lebih rapi
+        dialogTheme: DialogThemeData(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+          titleTextStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1A1A1A)),
+          contentTextStyle: const TextStyle(
+              fontSize: 14, color: Color(0xFF555555)),
+        ),
+      ),
       home: const LoginScreen(),
     );
   }

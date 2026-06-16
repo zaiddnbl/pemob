@@ -78,7 +78,27 @@ class FirestoreService {
 
   static Future<bool> saveUser(UserModel user) async {
     try {
-      await _usersRef.doc(user.uid).set(user.toFirestore());
+      // ✅ Tambahkan createdAt saat pertama kali simpan user
+      await _usersRef.doc(user.uid).set({
+        ...user.toFirestore(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // ✅ Jika pedagang, set tanggalMasuk di kios
+      if (user.role == 'pedagang' && user.noKios.isNotEmpty && user.noKios != '-') {
+        final snapKios = await _kiosRef
+            .where('noKios', isEqualTo: user.noKios)
+            .limit(1)
+            .get();
+        if (snapKios.docs.isNotEmpty) {
+          await snapKios.docs.first.reference.update({
+            'status': 'aktif',
+            'namaPedagang': user.nama,
+            'nomorHp': user.nomorHp,
+            'tanggalMasuk': FieldValue.serverTimestamp(),
+          });
+        }
+      }
       return true;
     } catch (e) {
       return false;
@@ -154,14 +174,52 @@ class FirestoreService {
     required String email,
     required String nomorHp,
     required String noKios,
+    String? oldNoKios, // kios lama untuk dikosongkan
   }) async {
     try {
+      // 1. Update data user — HANYA field yang berubah, tidak overwrite semua
       await _usersRef.doc(uid).update({
         'nama': nama,
         'email': email,
         'nomorHp': nomorHp,
         'noKios': noKios,
       });
+
+      // 2. Sinkronisasi kios jika noKios berubah
+      if (oldNoKios != null && oldNoKios != noKios && oldNoKios != '-') {
+        // Kosongkan kios lama
+        final snapLama = await _kiosRef
+            .where('noKios', isEqualTo: oldNoKios)
+            .limit(1)
+            .get();
+        if (snapLama.docs.isNotEmpty) {
+          await snapLama.docs.first.reference.update({
+            'status': 'kosong',
+            'namaPedagang': '',
+            'nomorHp': '',
+          });
+        }
+      }
+
+      // 3. Aktifkan kios baru dengan nama pedagang
+      if (noKios.isNotEmpty && noKios != '-') {
+        final userDoc = await _usersRef.doc(uid).get();
+        final namaUser = (userDoc.data() as Map<String, dynamic>?)?['nama'] ?? nama;
+        final nomorHpUser = (userDoc.data() as Map<String, dynamic>?)?['nomorHp'] ?? nomorHp;
+
+        final snapBaru = await _kiosRef
+            .where('noKios', isEqualTo: noKios)
+            .limit(1)
+            .get();
+        if (snapBaru.docs.isNotEmpty) {
+          await snapBaru.docs.first.reference.update({
+            'status': 'aktif',
+            'namaPedagang': namaUser,
+            'nomorHp': nomorHpUser,
+          });
+        }
+      }
+
       return true;
     } catch (e) {
       return false;

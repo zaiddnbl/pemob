@@ -300,6 +300,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 labelText: 'Nomor HP',
                                 prefixIcon: Icon(Icons.phone_outlined),
                               ),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Nomor HP wajib diisi';
+                                if (v.trim().length < 10)
+                                  return 'Nomor HP minimal 10 digit';
+                                if (!RegExp(r'^[0-9+]+$').hasMatch(v.trim()))
+                                  return 'Nomor HP hanya boleh angka';
+                                return null;
+                              },
                             ),
                             const SizedBox(height: 14),
 
