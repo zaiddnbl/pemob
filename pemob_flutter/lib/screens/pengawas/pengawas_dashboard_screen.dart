@@ -341,64 +341,67 @@ class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
                               final initial = item.user.nama.isNotEmpty
                                   ? item.user.nama[0].toUpperCase() : 'P';
 
-                              return Container(
-                                width: 150,
-                                margin: EdgeInsets.only(
-                                    right: i == filtered.length - 1 ? 0 : 12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.grey.shade100),
-                                  boxShadow: [BoxShadow(
-                                      color: Colors.black.withOpacity(0.06),
-                                      blurRadius: 10, offset: const Offset(0, 4))],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(
-                                          top: Radius.circular(20)),
-                                      child: _PhotoWidget(
-                                          uid: item.user.uid,
-                                          initial: initial,
-                                          width: 150, height: 115),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(10),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(item.user.nama,
-                                              style: const TextStyle(fontSize: 12,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: Color(0xFF1A1A1A)),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis),
-                                          const SizedBox(height: 2),
-                                          Text('Kios ${item.user.noKios}',
-                                              style: const TextStyle(
-                                                  fontSize: 10, color: AppTheme.greyText)),
-                                          const SizedBox(height: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 3),
-                                            decoration: BoxDecoration(
-                                                color: sisaColor.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(20),
-                                                border: Border.all(
-                                                    color: sisaColor.withOpacity(0.3))),
-                                            child: Text(sisa,
-                                                style: TextStyle(fontSize: 9,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: sisaColor),
+                              return GestureDetector(
+                                onTap: () => _showDetailPedagang(context, item),
+                                child: Container(
+                                  width: 150,
+                                  margin: EdgeInsets.only(
+                                      right: i == filtered.length - 1 ? 0 : 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Colors.grey.shade100),
+                                    boxShadow: [BoxShadow(
+                                        color: Colors.black.withOpacity(0.06),
+                                        blurRadius: 10, offset: const Offset(0, 4))],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(
+                                            top: Radius.circular(20)),
+                                        child: _PhotoWidget(
+                                            uid: item.user.uid,
+                                            initial: initial,
+                                            width: 150, height: 115),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(item.user.nama,
+                                                style: const TextStyle(fontSize: 12,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: Color(0xFF1A1A1A)),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis),
-                                          ),
-                                        ],
+                                            const SizedBox(height: 2),
+                                            Text('Kios ${item.user.noKios}',
+                                                style: const TextStyle(
+                                                    fontSize: 10, color: AppTheme.greyText)),
+                                            const SizedBox(height: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                  color: sisaColor.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                  border: Border.all(
+                                                      color: sisaColor.withOpacity(0.3))),
+                                              child: Text(sisa,
+                                                  style: TextStyle(fontSize: 9,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: sisaColor),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               );
                             },
@@ -457,6 +460,106 @@ class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
             color: isActive ? Colors.white : AppTheme.greyText)),
       ),
     );
+  }
+
+  // ✅ Popup detail pedagang saat card di carousel diklik
+  void _showDetailPedagang(BuildContext context, _PedagangItem item) {
+    final sisaColor = _sisaColor(item.jatuhTempo);
+    final sisa = _sisaText(item.jatuhTempo);
+    final initial = item.user.nama.isNotEmpty
+        ? item.user.nama[0].toUpperCase() : 'P';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        padding: EdgeInsets.only(
+          left: 24, right: 24, top: 24,
+          bottom: MediaQuery.of(context).padding.bottom + 24,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: _PhotoWidget(
+                    uid: item.user.uid, initial: initial,
+                    width: 90, height: 90),
+              ),
+              const SizedBox(height: 12),
+              Text(item.user.nama,
+                  style: const TextStyle(fontSize: 16,
+                      fontWeight: FontWeight.w800, color: _teal)),
+              Text('@${item.user.username}',
+                  style: const TextStyle(fontSize: 12, color: AppTheme.greyText)),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                    color: sisaColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: sisaColor.withOpacity(0.3))),
+                child: Text(sisa, style: TextStyle(fontSize: 12,
+                    fontWeight: FontWeight.w700, color: sisaColor)),
+              ),
+              const SizedBox(height: 20),
+              _detailRow('Nomor Kios', item.user.noKios),
+              _detailRow('Email', item.user.email),
+              _detailRow('No. HP',
+                  item.user.nomorHp.isNotEmpty ? item.user.nomorHp : '-'),
+              _detailRow('Jenis Kelamin',
+                  item.user.gender.isNotEmpty ? item.user.gender : '-'),
+              _detailRow('Jatuh Tempo', item.jatuhTempo != null
+                  ? _formatTanggalIndo(item.jatuhTempo!) : 'Belum ada'),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Tutup'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, color: AppTheme.greyText)),
+        Flexible(child: Text(value, textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 13,
+                fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)))),
+      ],
+    ),
+  );
+
+  String _formatTanggalIndo(DateTime dt) {
+    final bulan = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    return '${dt.day} ${bulan[dt.month]} ${dt.year}';
   }
 }
 

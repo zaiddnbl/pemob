@@ -191,7 +191,7 @@ class _AdminUserScreenState extends State<AdminUserScreen>
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF1A3C34))),
-                const Text('Password default: password123',
+                const Text('Password default: sipesel123',
                     style: TextStyle(
                         fontSize: 12, color: AppTheme.greyText)),
                 const SizedBox(height: 20),
@@ -235,24 +235,55 @@ class _AdminUserScreenState extends State<AdminUserScreen>
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () async {
-                      await FirestoreService.saveUser(UserModel(
-                        uid: DateTime.now().millisecondsSinceEpoch.toString(),
-                        nama: namaCtrl.text.trim(),
-                        username: usernameCtrl.text.trim(),
-                        email: emailCtrl.text.trim(),
-                        nomorHp: hpCtrl.text.trim(),
-                        gender: selectedGender,
-                        role: selectedRole,
-                        noKios: selectedRole == 'pedagang'
-                            ? kiosCtrl.text.trim()
-                            : '-',
-                      ));
+                      if (namaCtrl.text.trim().isEmpty ||
+                          usernameCtrl.text.trim().isEmpty ||
+                          emailCtrl.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(
+                            content: Text('Nama, username, dan email wajib diisi'),
+                            backgroundColor: AppTheme.errorRed,
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Loading indicator sederhana
+                      showDialog(
+                        context: ctx,
+                        barrierDismissible: false,
+                        builder: (_) => const Center(
+                            child: CircularProgressIndicator(
+                                color: Color(0xFF1A3C34))),
+                      );
+
+                      // ✅ Buat akun Auth + simpan data, password default sipesel123
+                      final success = await FirestoreService.createUserByAdmin(
+                        UserModel(
+                          uid: '', // diisi otomatis oleh createUserByAdmin
+                          nama: namaCtrl.text.trim(),
+                          username: usernameCtrl.text.trim(),
+                          email: emailCtrl.text.trim(),
+                          nomorHp: hpCtrl.text.trim(),
+                          gender: selectedGender,
+                          role: selectedRole,
+                          noKios: selectedRole == 'pedagang'
+                              ? kiosCtrl.text.trim()
+                              : '-',
+                        ),
+                      );
+
                       if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
+                      Navigator.pop(ctx); // tutup loading
+                      Navigator.pop(ctx); // tutup form
+
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(
-                          content: Text('User berhasil ditambahkan ✅'),
-                          backgroundColor: AppTheme.accentGreen,
+                        SnackBar(
+                          content: Text(success
+                              ? 'User berhasil ditambahkan ✅ (password: sipesel123)'
+                              : 'Gagal menambahkan user. Email mungkin sudah dipakai.'),
+                          backgroundColor: success
+                              ? AppTheme.accentGreen
+                              : AppTheme.errorRed,
                         ),
                       );
                     },
@@ -745,34 +776,57 @@ class _UserList extends StatelessWidget {
         title: const Text('Reset Password'),
         content: Text(
             'Kirim email reset password ke ${user.email}?'),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await FirebaseAuth.instance
-                    .sendPasswordResetEmail(email: user.email);
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Email reset dikirim ✅'),
-                    backgroundColor: AppTheme.accentGreen,
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    try {
+                      await FirebaseAuth.instance
+                          .sendPasswordResetEmail(email: user.email);
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Email reset dikirim ✅'),
+                          backgroundColor: AppTheme.accentGreen,
+                        ),
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gagal: $e')),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: _navyDark,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12))),
+                  child: const Text('Kirim',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w800)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade600,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade300)),
                   ),
-                );
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Gagal: $e')),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: _navyDark),
-            child: const Text('Kirim',
-                style: TextStyle(color: Colors.white)),
+                  child: const Text('Batal',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -787,26 +841,49 @@ class _UserList extends StatelessWidget {
             borderRadius: BorderRadius.circular(20)),
         title: const Text('Hapus User'),
         content: Text('Hapus data ${user.nama}?'),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await FirestoreService.deleteUser(user.uid);
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('User dihapus'),
-                  backgroundColor: Colors.red,
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await FirestoreService.deleteUser(user.uid);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('User dihapus, kios ikut dikosongkan jika ada'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12))),
+                  child: const Text('Hapus',
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w800)),
                 ),
-              );
-            },
-            style:
-            ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Hapus',
-                style: TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade600,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade300)),
+                  ),
+                  child: const Text('Batal',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

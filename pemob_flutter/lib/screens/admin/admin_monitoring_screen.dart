@@ -831,40 +831,59 @@ class _VerifikasiTab extends StatelessWidget {
             ),
           ],
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () async {
-              Navigator.pop(context);
-              final success = await FirestoreService.approvePembayaran(p.id);
-              if (success) {
-                await FirestoreService.buatNotifikasiVerifikasi(
-                  noKios: p.noKios,
-                  noTransaksi: p.noTransaksi,
-                  jenisPajak: p.jenisPajak,
-                  jumlah: p.jumlah,
-                );
-              }
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      success ? 'Pembayaran disetujui ✅' : 'Gagal menyetujui'),
-                  backgroundColor:
-                  success ? AppTheme.accentGreen : AppTheme.errorRed,
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    final success = await FirestoreService.approvePembayaran(p.id);
+                    if (success) {
+                      await FirestoreService.buatNotifikasiVerifikasi(
+                        noKios: p.noKios,
+                        noTransaksi: p.noTransaksi,
+                        jenisPajak: p.jenisPajak,
+                        jumlah: p.jumlah,
+                      );
+                    }
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            success ? 'Pembayaran disetujui ✅' : 'Gagal menyetujui'),
+                        backgroundColor:
+                        success ? AppTheme.accentGreen : AppTheme.errorRed,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                  label: const Text('Setujui',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryGreen,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12))),
                 ),
-              );
-            },
-            icon:
-            const Icon(Icons.check_rounded, size: 16, color: Colors.white),
-            label: const Text('Setujui', style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryGreen,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10))),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade600,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade300)),
+                  ),
+                  child: const Text('Batal',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

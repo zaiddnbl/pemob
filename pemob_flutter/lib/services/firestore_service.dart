@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../models/kios_model.dart';
 import '../models/pembayaran_model.dart';
 import '../models/tagihan_model.dart';
@@ -75,6 +77,66 @@ class FirestoreService {
   // ══════════════════════════════════════════════════════════
   //  USERS
   // ══════════════════════════════════════════════════════════
+
+  /// ✅ Dipakai admin untuk tambah user baru.
+  /// Membuat akun Firebase Auth dengan password default "sipesel123"
+  /// SEKALIGUS menyimpan data ke koleksi users dan sinkron ke kios.
+  ///
+  /// PENTING: createUserWithEmailAndPassword otomatis login sebagai user
+  /// baru tersebut dan akan menggantikan sesi admin yang aktif. Untuk
+  /// menghindari ini, kita pakai secondary Firebase App khusus untuk
+  /// membuat akun, supaya sesi admin di app utama tidak terganggu.
+  static Future<bool> createUserByAdmin(UserModel user) async {
+    FirebaseApp? secondaryApp;
+    try {
+      // 1. Buat secondary app sementara (nama unik tiap kali)
+      secondaryApp = await Firebase.initializeApp(
+        name: 'secondary_${DateTime.now().millisecondsSinceEpoch}',
+        options: Firebase.app().options,
+      );
+      final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+
+      // 2. Buat akun Auth lewat secondary app — sesi admin utama tidak berubah
+      final credential = await secondaryAuth.createUserWithEmailAndPassword(
+        email: user.email,
+        password: 'sipesel123',
+      );
+      final uid = credential.user!.uid;
+
+      // 3. Simpan data user pakai UID asli dari Auth (lewat Firestore utama)
+      await _usersRef.doc(uid).set({
+        ...user.toFirestore(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // 4. Aktifkan kios kalau role pedagang
+      if (user.role == 'pedagang' && user.noKios.isNotEmpty && user.noKios != '-') {
+        final snapKios = await _kiosRef
+            .where('noKios', isEqualTo: user.noKios)
+            .limit(1)
+            .get();
+        if (snapKios.docs.isNotEmpty) {
+          await snapKios.docs.first.reference.update({
+            'status': 'aktif',
+            'namaPedagang': user.nama,
+            'nomorHp': user.nomorHp,
+            'tanggalMasuk': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      // 5. Sign out dari secondary auth dan hapus secondary app
+      await secondaryAuth.signOut();
+      return true;
+    } catch (e) {
+      return false;
+    } finally {
+      // Selalu bersihkan secondary app
+      if (secondaryApp != null) {
+        await secondaryApp.delete();
+      }
+    }
+  }
 
   static Future<bool> saveUser(UserModel user) async {
     try {
@@ -226,8 +288,58 @@ class FirestoreService {
     }
   }
 
+  /// ✅ Hapus user + kosongkan kios jika user adalah pedagang yang punya kios
   static Future<bool> deleteUser(String uid) async {
     try {
+      // 1. Ambil data user dulu sebelum dihapus, untuk tahu noKios-nya
+      final userDoc = await _usersRef.doc(uid).get();
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        final role = data['role'] as String? ?? '';
+        final noKios = data['noKios'] as String? ?? '';
+
+        // 2. Kalau pedagang dan punya kios, kosongkan kios + bersihkan
+        //    semua riwayat yang masih nempel di noKios tersebut
+        //    (pembayaran, jatuh_tempo, notifikasi), supaya pedagang
+        //    baru yang masuk ke kios ini mulai dari nol.
+        if (role == 'pedagang' && noKios.isNotEmpty && noKios != '-') {
+          final batch = _db.batch();
+
+          // 2a. Kosongkan dokumen kios
+          final snapKios = await _kiosRef
+              .where('noKios', isEqualTo: noKios)
+              .limit(1)
+              .get();
+          if (snapKios.docs.isNotEmpty) {
+            batch.update(snapKios.docs.first.reference, {
+              'status': 'kosong',
+              'namaPedagang': '',
+              'nomorHp': '',
+            });
+          }
+
+          // 2b. Hapus semua riwayat pembayaran milik noKios ini
+          final snapPembayaran =
+          await _pembayaranRef.where('noKios', isEqualTo: noKios).get();
+          for (final doc in snapPembayaran.docs) {
+            batch.delete(doc.reference);
+          }
+
+          // 2c. Hapus jatuh tempo (id dokumen == noKios)
+          batch.delete(_jatuhTempoRef.doc(noKios));
+
+          // 2d. Hapus notifikasi terkait noKios ini
+          final snapNotifikasi =
+          await _notifikasiRef.where('noKios', isEqualTo: noKios).get();
+          for (final doc in snapNotifikasi.docs) {
+            batch.delete(doc.reference);
+          }
+
+          await batch.commit();
+        }
+      }
+
+      // 3. Hapus dokumen user
       await _usersRef.doc(uid).delete();
       return true;
     } catch (e) {
