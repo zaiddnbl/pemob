@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../models/kios_model.dart';
 import '../../models/user_model.dart';
 import '../../services/firestore_service.dart';
 import '../../theme/app_theme.dart';
@@ -153,7 +154,7 @@ class _AdminUserScreenState extends State<AdminUserScreen>
     final usernameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
     final hpCtrl = TextEditingController();
-    final kiosCtrl = TextEditingController();
+    String? selectedKios; // ✅ diganti dari TextEditingController jadi dropdown
     String selectedRole = 'pedagang';
     String selectedGender = 'Laki-laki';
 
@@ -227,8 +228,106 @@ class _AdminUserScreenState extends State<AdminUserScreen>
                 ),
                 if (selectedRole == 'pedagang') ...[
                   const SizedBox(height: 10),
-                  _inputField(
-                      kiosCtrl, 'No. Kios', Icons.storefront_outlined),
+                  // ✅ Dropdown kios kosong — realtime dari Firestore
+                  StreamBuilder<List<KiosModel>>(
+                    stream: FirestoreService.streamKios(),
+                    builder: (context, snapshot) {
+                      final kiosKosong = (snapshot.data ?? [])
+                          .where((k) => k.status == 'kosong')
+                          .toList()
+                        ..sort((a, b) => a.noKios.compareTo(b.noKios));
+
+                      // Loading
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF4F6F5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 16),
+                          child: const Row(
+                            children: [
+                              SizedBox(
+                                width: 16, height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Color(0xFF1A3C34)),
+                              ),
+                              SizedBox(width: 12),
+                              Text('Memuat daftar kios...',
+                                  style: TextStyle(
+                                      fontSize: 13, color: AppTheme.greyText)),
+                            ],
+                          ),
+                        );
+                      }
+
+                      // Tidak ada kios kosong
+                      if (kiosKosong.isEmpty) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.errorRed.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: AppTheme.errorRed.withOpacity(0.3)),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 14),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded,
+                                  color: AppTheme.errorRed, size: 18),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Tidak ada kios kosong tersedia',
+                                  style: TextStyle(
+                                      fontSize: 12, color: AppTheme.errorRed),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      // Reset pilihan kalau kios yang dipilih sebelumnya
+                      // sudah tidak ada di daftar kosong (misal baru terisi)
+                      if (selectedKios != null &&
+                          !kiosKosong.any((k) => k.noKios == selectedKios)) {
+                        selectedKios = null;
+                      }
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F6F5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
+                        child: DropdownButtonFormField<String>(
+                          value: selectedKios,
+                          decoration: const InputDecoration(
+                            labelText: 'No. Kios',
+                            prefixIcon: Icon(Icons.storefront_outlined,
+                                color: Color(0xFF1A3C34), size: 20),
+                            border: InputBorder.none,
+                          ),
+                          hint: const Text('Pilih kios kosong',
+                              style: TextStyle(
+                                  fontSize: 13, color: AppTheme.greyText)),
+                          items: kiosKosong
+                              .map((k) => DropdownMenuItem(
+                            value: k.noKios,
+                            child: Text(
+                                '${k.noKios} • Zona ${k.zona}'),
+                          ))
+                              .toList(),
+                          onChanged: (v) =>
+                              setModalState(() => selectedKios = v),
+                        ),
+                      );
+                    },
+                  ),
                 ],
                 const SizedBox(height: 20),
                 SizedBox(
@@ -241,6 +340,17 @@ class _AdminUserScreenState extends State<AdminUserScreen>
                         ScaffoldMessenger.of(ctx).showSnackBar(
                           const SnackBar(
                             content: Text('Nama, username, dan email wajib diisi'),
+                            backgroundColor: AppTheme.errorRed,
+                          ),
+                        );
+                        return;
+                      }
+
+                      // ✅ Wajib pilih kios kalau role pedagang
+                      if (selectedRole == 'pedagang' && selectedKios == null) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(
+                            content: Text('Pilih kios untuk pedagang ini'),
                             backgroundColor: AppTheme.errorRed,
                           ),
                         );
@@ -267,7 +377,7 @@ class _AdminUserScreenState extends State<AdminUserScreen>
                           gender: selectedGender,
                           role: selectedRole,
                           noKios: selectedRole == 'pedagang'
-                              ? kiosCtrl.text.trim()
+                              ? selectedKios!
                               : '-',
                         ),
                       );
