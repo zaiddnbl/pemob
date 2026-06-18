@@ -22,9 +22,30 @@ class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
   static const Color _teal = Color(0xFF1A3C34);
   static const Color _bg = Color(0xFFF5F7FA);
 
+  // ── VARIABEL STREAM BARU (TIDAK DI-RESET SAAT SETSTATE) ──
+  late Stream<QuerySnapshot> _usersStream;
+  late Stream<QuerySnapshot> _kiosStream;
+  late Stream<QuerySnapshot> _pembayaranStream;
+
   @override
   void initState() {
     super.initState();
+
+    // ── INISIALISASI STREAM HANYA SEKALI DI SINI ──
+    _usersStream = FirebaseFirestore.instance
+        .collection('users')
+        .where('role', isEqualTo: 'pedagang')
+        .snapshots();
+
+    _kiosStream = FirebaseFirestore.instance
+        .collection('kios')
+        .where('status', isEqualTo: 'aktif')
+        .snapshots();
+
+    _pembayaranStream = FirebaseFirestore.instance
+        .collection('pembayaran')
+        .snapshots();
+
     _searchCtrl.addListener(() => setState(() => _searchQuery = _searchCtrl.text));
   }
 
@@ -83,25 +104,17 @@ class _PengawasDashboardScreenState extends State<PengawasDashboardScreen> {
     final user = SessionUser.currentUser;
     final nama = user?.nama ?? 'User';
 
-    // ── 3 Stream sekaligus ────────────────────────────────────
+    // ── MENGGUNAKAN VARIABEL STREAM, BUKAN MEMBUAT BARU ──
     return Scaffold(
       backgroundColor: _bg,
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .where('role', isEqualTo: 'pedagang')
-            .snapshots(),
+        stream: _usersStream,
         builder: (context, snapUsers) {
           return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('kios')
-                .where('status', isEqualTo: 'aktif')
-                .snapshots(),
+            stream: _kiosStream,
             builder: (context, snapKios) {
               return StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('pembayaran')
-                    .snapshots(),
+                stream: _pembayaranStream,
                 builder: (context, snapPembayaran) {
 
                   // Loading
